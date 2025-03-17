@@ -1,9 +1,7 @@
 
 from enum import Enum
 from time import sleep
-
-import requests
-from bs4 import BeautifulSoup
+import pickle
 
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
@@ -15,6 +13,8 @@ class TicketTypes(Enum):
     RETURN=2
 
 class DateTime:
+    # can be used just to store a time, just to store a date, or both. day/month/year will always
+    # be integers and str() will format the date in the form "ddmmyy"
     months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 
     def __init__(self, hour, minute, day=1, month=1, year=2025):
@@ -49,6 +49,9 @@ class DateTime:
         return f"{'0' if self.minute < 10 else ''}{self.minute}"
 
 class NationalRailScraper:
+    # queries the national rail website (https://www.nationalrail.co.uk/) for the
+    # specified train journey and finds the cheapest ticket with the given options
+
     def __init__(self, origin, destination, date, adults, children):
         options = Options()
         self.browser = Chrome(options=options)
@@ -92,20 +95,31 @@ class NationalRailScraper:
 
 
 
-# gather this information from chatbot
-ticket = "single"
+with open("station_list.pickle", "rb") as file:
+    station_dict = pickle.load(file)
+print(station_dict)
+
+# ========================================================
+# gather this information from the chatbot (somehow)
+ticket = TicketTypes.RETURN
 leaving_date = DateTime(12, 45, 19, 3, 2025)
 return_date = DateTime(13, 45, 21, 3, 2025)
 origin = "NRW"
 destination = "IPS"
 adults = 2
 children = 2
+# ========================================================
 
-# use it with scraper to retrieve journey times
+
+
+
+# ================================================================================
+# use the gathered information with a web scraper to retrieve journey times
 scraper = NationalRailScraper(origin, destination, leaving_date, adults, children)
-# scraper.set_single_ticket(leaving_date)
 scraper.set_return_ticket(leaving_date, return_date)
 scraper.launch_scraper()
 scraper.clear_cookies_popup();
+# ================================================================================
+
 
 input()
