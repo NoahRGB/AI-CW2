@@ -62,7 +62,8 @@ class NationalRailScraper:
                     + f"&children={children}&leavingType=departing&extraTime=0")
 
     def __del__(self):
-        self.browser.close()
+        pass
+        # self.browser.close()
 
     def clear_cookies_popup(self):
         # looks for the cookies accept button until it exists and then clicks it
@@ -137,7 +138,7 @@ with open("station_list.pickle", "rb") as file:
 # ========================================================
 # gather this information from the chatbot (somehow)
 ticket = TicketTypes.RETURN
-leaving_date = DateTime(12, 30, 20, 3, 2025)
+leaving_date = DateTime(12, 30, 21, 3, 2025)
 # return_date = DateTime(13, 45, 21, 3, 2025)
 origin = "NRW"
 destination = "IPS"
@@ -153,11 +154,9 @@ scraper.set_single_ticket(leaving_date)
 # scraper.set_return_ticket(leaving_date, return_date)
 scraper.launch_scraper()
 scraper.clear_cookies_popup()
-print(scraper.get_cheapest_listed())
-# print(scraper.get_info_on_ticket(1))
+
+cheapest = scraper.get_cheapest_listed()
+print(f"\n\nCheapest ticket:\nDeparture time: {cheapest['departure_time']}\nArrival time: {cheapest['arrival_time']}\nDuration: {cheapest['length']}\nPrice: {cheapest['price']}\n\n")
+
+
 # ================================================================================
-
-
-input()
-
-# https://www.nationalrail.co.uk/journey-planner/?origin=NRW&destination=IPS&leavingDate=190325&adults=1&children=1&leavingType=departing&extraTime=0&type=single&leavingHour=12&leavingMin=30

@@ -1,0 +1,15 @@
+{
+  "greeting": [
+    "Hey there. You can ask me about trains",
+    "Hey!",
+    "Hey, I can give you information about trains"
+  ],
+  "exit": [
+    "Goodbye",
+    "Bye bye",
+    "Thanks, bye!"
+  ],
+  "task1_setup": [
+    "I'll help you find the cheapest train ticket for your journey. What kind of ticket do you want?"
+  ]
+}

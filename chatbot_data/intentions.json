@@ -5,7 +5,9 @@
             "hi"
         ],
         "responses": [
-            "Hey there. You can ask me about trains"
+            "Hey there. You can ask me about trains",
+            "Hey!",
+            "Hey, I can give you information about trains"
         ]
     },
     "goodbye": {
