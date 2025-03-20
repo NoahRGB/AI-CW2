@@ -1,0 +1,34 @@
+{
+    "greeting": {
+        "patterns": [
+            "hello",
+            "hi"
+        ],
+        "responses": [
+            "Hey there. You can ask me about trains"
+        ]
+    },
+    "goodbye": {
+        "patterns": [
+            "bye",
+            "goodbye",
+            "exit",
+            "end"
+        ], 
+        "responses": [
+            "Goodbye!"
+        ]
+    },
+    "cheapest ticket": {
+        "patterns": [
+            "ticket",
+            "cheapest",
+            "cost",
+            "single",
+            "return"
+        ],
+        "responses": [
+            "You want me to find the cheapest train ticket for a journey?"
+        ]
+    }
+}

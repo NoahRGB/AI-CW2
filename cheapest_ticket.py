@@ -137,7 +137,7 @@ with open("station_list.pickle", "rb") as file:
 # ========================================================
 # gather this information from the chatbot (somehow)
 ticket = TicketTypes.RETURN
-leaving_date = DateTime(12, 30, 19, 3, 2025)
+leaving_date = DateTime(12, 30, 20, 3, 2025)
 # return_date = DateTime(13, 45, 21, 3, 2025)
 origin = "NRW"
 destination = "IPS"
@@ -159,3 +159,5 @@ print(scraper.get_cheapest_listed())
 
 
 input()
+
+# https://www.nationalrail.co.uk/journey-planner/?origin=NRW&destination=IPS&leavingDate=190325&adults=1&children=1&leavingType=departing&extraTime=0&type=single&leavingHour=12&leavingMin=30
