@@ -132,7 +132,7 @@ class NationalRailScraper:
 
 
 
-with open("station_list.pickle", "rb") as file:
+with open("./chatbot_data/station_list.pickle", "rb") as file:
     station_dict = pickle.load(file)
 
 # ========================================================

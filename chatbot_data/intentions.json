@@ -2,7 +2,11 @@
     "greeting": {
         "patterns": [
             "hello",
-            "hi"
+            "hi",
+            "hey",
+            "hey hey",
+            "heyo",
+            "whats up?"
         ],
         "responses": [
             "Hey there. You can ask me about trains",
@@ -10,7 +14,7 @@
             "Hey, I can give you information about trains"
         ]
     },
-    "goodbye": {
+    "exit": {
         "patterns": [
             "bye",
             "goodbye",
@@ -18,19 +22,43 @@
             "end"
         ], 
         "responses": [
-            "Goodbye!"
+            "Goodbye!",
+            "Bye bye",
+            "Thanks, bye!"
         ]
     },
-    "cheapest ticket": {
+    "task1": {
         "patterns": [
             "ticket",
             "cheapest",
             "cost",
-            "single",
-            "return"
+            "Can you find the cheapest tickets?",
+            "Can you find me some train tickets?",
+            "I need train tickets"
         ],
         "responses": [
-            "You want me to find the cheapest train ticket for a journey?"
+            "I'll help you find the cheapest train ticket for your journey. What kind of ticket do you want?"
+        ]
+    },
+    "cancel": {
+        "patterns": [
+            "go back",
+            "exit",
+            "cancel",
+            "undo"
+        ],
+        "responses": [
+            "Ok"
+        ]
+    },
+    "single_ticket": {
+        "patterns": [
+            "single", "single ticket", "one way"
+        ]
+    },
+    "return_ticket": {
+        "patterns": [
+            "return", "both ways", "two ways", "open return", "round trip"
         ]
     }
 }
