@@ -3,6 +3,8 @@ from enum import Enum
 from time import sleep
 import pickle
 
+from DateTime import DateTime
+
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -12,41 +14,12 @@ class TicketTypes(Enum):
     SINGLE=1,
     RETURN=2
 
-class DateTime:
-    # can be used just to store a time, just to store a date, or both. day/month/year will always
-    # be integers and str() will format the date in the form "ddmmyy"
-    months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
-
-    def __init__(self, hour, minute, day=1, month=1, year=2025):
-        self.__hour = hour
-        self.__minute = minute
-        self.day = day
-        self.month = month
-        self.year = year
-
-        if type(self.month) is str:
-            does_month_exist = DateTime.months.count(self.month.lower()) > 0
-            if does_month_exist:
-                # turn string month into integer month
-                self.month = DateTime.months.index(self.month.lower()) + 1
-        
-        # check all attributes are integers and year is correct length, otherwise reset
-        if not isinstance(self.day, int) or not isinstance(self.month, int) or not isinstance(self.year, int) or len(str(self.year)) != 4:
-            self.reset()
-
-    def reset(self):
-        self.day = 1
-        self.month = 1
-        self.year = 2025
-
-    def __str__(self):
-        return f"{'0' if self.day < 10 else ''}{str(self.day)}{'0' if self.month < 10 else ''}{str(self.month)}{str(self.year)[2:4]}"
-    
-    def get_hour(self):
-        return f"{'0' if self.__hour < 10 else ''}{self.__hour}"
-    
-    def get_min(self):
-        return f"{'0' if self.__minute < 10 else ''}{self.__minute}"
+    @staticmethod
+    def from_string(s): # turn string into a TicketTypes enum
+        if s.lower() == "return":
+            return TicketTypes.RETURN
+        elif s.lower() == "single":
+            return TicketTypes.SINGLE
 
 class NationalRailScraper:
     # queries the national rail website (https://www.nationalrail.co.uk/) for the
@@ -54,6 +27,8 @@ class NationalRailScraper:
 
     def __init__(self, origin, destination, date, adults, children):
         options = Options()
+        options.add_argument("--log-level=3")
+        options.add_argument("--headless=new")
         self.browser = Chrome(options=options)
         self.actions = ActionChains(self.browser)
         self.ticket_type = None
@@ -138,7 +113,7 @@ with open("./chatbot_data/station_list.pickle", "rb") as file:
 # ========================================================
 # gather this information from the chatbot (somehow)
 ticket = TicketTypes.RETURN
-leaving_date = DateTime(12, 30, 21, 3, 2025)
+leaving_date = DateTime(12, 30, 31, 3, 2025)
 # return_date = DateTime(13, 45, 21, 3, 2025)
 origin = "NRW"
 destination = "IPS"
@@ -149,14 +124,14 @@ children = 1
 
 # ================================================================================
 # use the gathered information with a web scraper to retrieve journey times
-scraper = NationalRailScraper(origin, destination, leaving_date, adults, children)
-scraper.set_single_ticket(leaving_date)
-# scraper.set_return_ticket(leaving_date, return_date)
-scraper.launch_scraper()
-scraper.clear_cookies_popup()
 
-cheapest = scraper.get_cheapest_listed()
-print(f"\n\nCheapest ticket:\nDeparture time: {cheapest['departure_time']}\nArrival time: {cheapest['arrival_time']}\nDuration: {cheapest['length']}\nPrice: {cheapest['price']}\n\n")
+# scraper = NationalRailScraper(origin, destination, leaving_date, adults, children)
+# scraper.set_single_ticket(leaving_date)
+# # scraper.set_return_ticket(leaving_date, return_date)
+# scraper.launch_scraper()
+# scraper.clear_cookies_popup()
 
+# cheapest = scraper.get_cheapest_listed()
+# print(f"\n\nCheapest ticket:\nDeparture time: {cheapest['departure_time']}\nArrival time: {cheapest['arrival_time']}\nDuration: {cheapest['length']}\nPrice: {cheapest['price']}\n\n")
 
 # ================================================================================

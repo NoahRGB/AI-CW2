@@ -1,30 +1,20 @@
 {
     "greeting": {
         "patterns": [
-            "hello",
-            "hi",
-            "hey",
-            "hey hey",
-            "heyo",
-            "whats up?"
+            "hello", "hi", "hey", "hey hey", "heyo", "whats up?"
         ],
         "responses": [
-            "Hey there. You can ask me about trains",
-            "Hey!",
-            "Hey, I can give you information about trains"
+            "Hey there. You can ask me about cheap train tickets",
+            "Hey! I can plan a train journey for you",
+            "Hey, I can give you information about cheap train tickets"
         ]
     },
     "exit": {
         "patterns": [
-            "bye",
-            "goodbye",
-            "exit",
-            "end"
+            "bye", "goodbye", "exit", "end"
         ], 
         "responses": [
-            "Goodbye!",
-            "Bye bye",
-            "Thanks, bye!"
+            "Goodbye!", "Bye bye", "Thanks, bye!"
         ]
     },
     "task1": {
@@ -34,7 +24,16 @@
             "cost",
             "Can you find the cheapest tickets?",
             "Can you find me some train tickets?",
-            "I need train tickets"
+            "I need train tickets",
+            "plan a train journey for me",
+            "plan a journey",
+            "journey planner",
+            "task 1",
+            "do task 1",
+            "link me to train tickets",
+            "i want to travel on a train",
+            "i want to get somewhere via train",
+            "plan my train journey"
         ],
         "responses": [
             "I'll help you find the cheapest train ticket for your journey. What kind of ticket do you want?"
@@ -42,10 +41,15 @@
     },
     "cancel": {
         "patterns": [
-            "go back",
-            "exit",
-            "cancel",
-            "undo"
+            "go back", "exit", "cancel", "undo"
+        ],
+        "responses": [
+            "Ok"
+        ]
+    },
+    "confirm": {
+        "patterns": [
+            "yes", "correct", "that's right", "yep", "ok", "yeah", "true", "alright", "good"
         ],
         "responses": [
             "Ok"
@@ -53,12 +57,17 @@
     },
     "single_ticket": {
         "patterns": [
-            "single", "single ticket", "one way"
+            "single", "single ticket", "one way", "normal ticket"
         ]
     },
     "return_ticket": {
         "patterns": [
-            "return", "both ways", "two ways", "open return", "round trip"
+            "return", "both ways", "two ways", "open return", "round trip", "return ticket"
+        ]
+    },
+    "unsure": {
+        "patterns": [
+            "not sure", "i don't know", "what does that mean", "how do i know", "huh", "i don't get it", "idk", "what?"
         ]
     }
 }
