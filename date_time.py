@@ -7,13 +7,14 @@ class DateTime:
     # be integers and str() will format the date in the form "ddmmyy"
     months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 
-    def __init__(self, hour, minute, day=1, month=1, year=2025):
+    def __init__(self, hour=10, minute=30, day=1, month=1, year=2025):
         self.__hour = hour
         self.__minute = minute
         self.day = day
         self.month = month
         self.year = year
 
+        # turn a string month e.g. "march" into its number e.g. 3
         if isinstance(self.month, str):
             does_month_exist = DateTime.months.count(self.month.lower()) > 0
             if does_month_exist:
@@ -40,27 +41,29 @@ class DateTime:
 
     @staticmethod
     def find_valid_time(text):
-        # given time must be string in form HH:MM
+        # searches for any valid times in the provided string
+        # given time must be in the form HH:MM
 
         # [01]\d means 0 or 1 followed by any digit
         # 2[0-3] means 2 followed by any digit 0-3
         # [0-5]\d means any digit 0-5 followed by any digit
-        regexs = [r"([01]\d|2[0-3]):([0-5]\d)", r"([01]\d|2[0-3])\s([0-5]\d)"]
-        for regex in regexs:
-            time_match = re.search(regex, text)
-            if time_match:
-                # format into a DateTime object
-                time = time_match.group()
-                if ":" in time: time = time.replace(":", " ")
-                time = time.split(" ")
-                return DateTime(int(time[0]), int(time[1]))
+        regex = r"([01]\d|2[0-3]|\d)[: \s]([0-5]\d)"
+        time_match = re.search(regex, text)
+        if time_match:
+            # format into a DateTime object
+            time = time_match.group()
+            if ":" in time: time = time.replace(":", " ")
+            time = time.split(" ")
+            return DateTime(hour=int(time[0]), minute=int(time[1]))
         return None
     
     @staticmethod
     def find_valid_date(text):
+        # searches for any valid dates in the provided string
+        
         text_month_pattern = f"({'|'.join(DateTime.months)})" # finds month strings based on DateTime.months
         num_month_pattern = r"(0\d|1[012]|[1-9])" # finds digits 00 - 12
-        day_pattern = r"(0\d|[12]\d|3[01])" # finds digits 00 - 31
+        day_pattern = r"(0\d|[12]\d|3[01]|\d)" # finds digits 00 - 31
 
         # finds a date in the format 'DD MONTH', 'MONTH DD', 'DD/MM', 'DD MM' and returns it as a DateTime object
         date_match = re.search(fr"(({day_pattern}\s{text_month_pattern})|({text_month_pattern}\s{day_pattern}))|({day_pattern}[/ \s]{num_month_pattern})", text)
@@ -74,5 +77,5 @@ class DateTime:
                 date = date.split(" ")
                 month = int(date[1])
                 day = int(date[0])
-            return DateTime(0, 0, day, month)
+            return DateTime(day=day, month=month)
         return None

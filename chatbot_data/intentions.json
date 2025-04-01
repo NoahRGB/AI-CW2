@@ -5,7 +5,6 @@
         ],
         "responses": [
             "Hey there. You can ask me about cheap train tickets",
-            "Hey! I can plan a train journey for you",
             "Hey, I can give you information about cheap train tickets"
         ]
     },
@@ -34,17 +33,11 @@
             "i want to travel on a train",
             "i want to get somewhere via train",
             "plan my train journey"
-        ],
-        "responses": [
-            "I'll help you find the cheapest train ticket for your journey. What kind of ticket do you want?"
         ]
     },
     "cancel": {
         "patterns": [
             "go back", "exit", "cancel", "undo"
-        ],
-        "responses": [
-            "Ok"
         ]
     },
     "confirm": {

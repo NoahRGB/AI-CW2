@@ -1,25 +1,13 @@
 
-from enum import Enum
 from time import sleep
-import pickle
 
-from DateTime import DateTime
+from date_time import DateTime
+from ticket_types import TicketTypes
 
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver import Keys, ActionChains
-
-class TicketTypes(Enum):
-    SINGLE=1,
-    RETURN=2
-
-    @staticmethod
-    def from_string(s): # turn string into a TicketTypes enum
-        if s.lower() == "return":
-            return TicketTypes.RETURN
-        elif s.lower() == "single":
-            return TicketTypes.SINGLE
 
 class NationalRailScraper:
     # queries the national rail website (https://www.nationalrail.co.uk/) for the
@@ -28,7 +16,8 @@ class NationalRailScraper:
     def __init__(self, origin, destination, date, adults, children):
         options = Options()
         options.add_argument("--log-level=3")
-        options.add_argument("--headless=new")
+        # headless means that a browser window won't actually open and it will do it in the background instead
+        # options.add_argument("--headless=new")
         self.browser = Chrome(options=options)
         self.actions = ActionChains(self.browser)
         self.ticket_type = None
@@ -37,11 +26,10 @@ class NationalRailScraper:
                     + f"&children={children}&leavingType=departing&extraTime=0")
 
     def __del__(self):
-        pass
-        # self.browser.close()
+        self.browser.close()
 
     def clear_cookies_popup(self):
-        # looks for the cookies accept button until it exists and then clicks it
+        # keeps looking for the cookies popup and then accepts it once it exists
         cookies_button = self.browser.find_elements(By.ID, "onetrust-accept-btn-handler")
         while len(cookies_button) == 0:
             cookies_button = self.browser.find_elements(By.ID, "onetrust-accept-btn-handler")
@@ -70,13 +58,14 @@ class NationalRailScraper:
         # returns an object with departure/arrival time, length and price for a ticket given
         # by the number that it appears in the ticket list
         # MUST BE on the ticket list page
-        ticket_info = { "departure_time": None, "arrival_time": None, "length": None, "price": None}
-        ticket_container = self.browser.find_element(By.CSS_SELECTOR, f"div[data-testid='card-result-card-outward-{ticket_number}'")
+        ticket_info = { "departure_time": None, "arrival_time": None, "length": None, "price": None, "ticket_number": None }
+        ticket_container = self.browser.find_element(By.CSS_SELECTOR, f"div[data-testid='card-result-card-outward-{ticket_number}']")
         times = ticket_container.find_elements(By.TAG_NAME, "time")
         ticket_info["departure_time"] = times[0].text
         ticket_info["arrival_time"] = times[1].text
         ticket_info["length"] = times[2].text[:-1] # remove redundant comma
         ticket_info["price"] = self.get_ticket_price(ticket_number)
+        ticket_info["ticket_number"] = ticket_number
         return ticket_info
     
     def get_ticket_price(self, ticket_number):
@@ -101,25 +90,27 @@ class NationalRailScraper:
             should_continue = len(self.browser.find_elements(By.ID, f"result-card-price-outward-{result_num}")) > 0
         return cheapest_ticket
 
+    def get_current_url(self):
+        # returns the URL that the browser is currently on
+        return self.browser.current_url
+
     def launch_scraper(self):
         self.browser.get(self.url)
 
 
-
-
-with open("./chatbot_data/station_list.pickle", "rb") as file:
-    station_dict = pickle.load(file)
-
 # ========================================================
 # gather this information from the chatbot (somehow)
-ticket = TicketTypes.RETURN
-leaving_date = DateTime(12, 30, 31, 3, 2025)
-# return_date = DateTime(13, 45, 21, 3, 2025)
-origin = "NRW"
-destination = "IPS"
-adults = 1
-children = 1
+
+# ticket = TicketTypes.RETURN
+# leaving_date = DateTime(hour=13, minute=30, day=1, month=4, year=2025)
+# # return_date = DateTime(hour=13, minute=45, day=21, month=3, year=2025)
+# origin = "NRW"
+# destination = "IPS"
+# adults = 1
+# children = 1
+
 # ========================================================
+
 
 
 # ================================================================================
@@ -134,4 +125,5 @@ children = 1
 # cheapest = scraper.get_cheapest_listed()
 # print(f"\n\nCheapest ticket:\nDeparture time: {cheapest['departure_time']}\nArrival time: {cheapest['arrival_time']}\nDuration: {cheapest['length']}\nPrice: {cheapest['price']}\n\n")
 
+# input()
 # ================================================================================
