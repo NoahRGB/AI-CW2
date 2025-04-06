@@ -38,6 +38,14 @@ class DateTime:
     
     def get_hour(self):
         return f"{'0' if self.__hour < 10 else ''}{self.__hour}"
+    
+    def get_time(self):
+        return f"{self.get_hour()}:{self.get_min()}"
+    
+    def __sub__(self, other):
+        if isinstance(other, DateTime):
+            pass
+            # implement date - date
 
     @staticmethod
     def find_valid_time(text):

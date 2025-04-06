@@ -1,6 +1,9 @@
 
 from enum import Enum
 
+# represents different ticket types so all files use the
+# same values 
+
 class TicketTypes(Enum):
     SINGLE="single",
     RETURN="return",
