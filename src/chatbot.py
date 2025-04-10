@@ -302,7 +302,7 @@ class ChatbotEngine(KnowledgeEngine):
         
     @Rule(OR(AND(Intention(type=Chatbot.IntentionTypes.SELECT_STATION), Ticket(type=MATCH.ticket_type), OriginStation(name=MATCH.origin_name, code=MATCH.origin_code)), AND(Ticket(type=MATCH.ticket_type), OriginStation(name=MATCH.origin_name, code=MATCH.origin_code))))
     def select_destination_station(self, ticket_type, origin_name, origin_code):
-        # already selected ticket type & origin satation, need to select destination station
+        # already selected ticket type & origin station, need to select destination station
         
         if self.chatbot.last_intention == Chatbot.IntentionTypes.SELECT_STATION:
             # check if the last message sent was a valid train station
@@ -324,7 +324,7 @@ class ChatbotEngine(KnowledgeEngine):
     
     @Rule(Ticket(type=MATCH.ticket_type), OriginStation(name=MATCH.origin_name, code=MATCH.origin_code), DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code))
     def select_departure_time(self, ticket_type, origin_name, origin_code, destination_name, destination_code):
-        # already selected ticket type & origin/desintaiton station, need to select a departure time
+        # already selected ticket type & origin/destination station, need to select a departure time
 
         self.chatbot.send_bot_message(f"When do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
         departure_time_input = input()

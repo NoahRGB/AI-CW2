@@ -8,8 +8,8 @@ class DateTime:
     months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 
     def __init__(self, hour=10, minute=30, day=1, month=1, year=2025):
-        self.__hour = hour
-        self.__minute = minute
+        self.__hour = int(hour)
+        self.__minute = int(minute)
         self.day = day
         self.month = month
         self.year = year
@@ -42,10 +42,45 @@ class DateTime:
     def get_time(self):
         return f"{self.get_hour()}:{self.get_min()}"
     
+    def __lt__(self, other):
+        if isinstance(other, DateTime): # DateTime is less than another DateTime
+            first_minute, first_hour = self.get_min(), self.get_hour()
+            second_minute, second_hour = other.get_min(), other.get_hour()
+            if first_hour < second_hour:
+                return True
+            elif first_hour > second_hour:
+                return False
+            if first_minute < second_minute:
+                return True
+            return False
+    
     def __sub__(self, other):
         if isinstance(other, DateTime):
-            pass
-            # implement date - date
+            # DateTime - DateTime
+            # returns the difference between the two dates
+            # in minutes. will be negative if the first date 
+            # is less than the second date
+            if self < other: 
+                return -(other - self)
+            
+            first_minute, first_hour = int(self.get_min()), int(self.get_hour())
+            second_minute, second_hour = int(other.get_min()), int(other.get_hour())
+            
+            total_mins = 0
+            while first_hour != second_hour:
+                total_mins += 60 - second_minute
+                second_hour += 1
+                second_minute = 0
+            total_mins += first_minute - second_minute
+            return total_mins # return DateTime.mins_to_hours(total_mins)
+            
+    @staticmethod
+    def mins_to_hours(mins):
+        # converts an amount of minutes e.g. 243 to 
+        # hours & minutes e.g. (4, 3) - 4 hours 3 mins
+        hours = int(mins / 60)
+        minutes = mins % 60
+        return hours, minutes
 
     @staticmethod
     def find_valid_time(text):
