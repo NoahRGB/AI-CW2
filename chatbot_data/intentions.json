@@ -62,5 +62,15 @@
         "patterns": [
             "not sure", "i don't know", "what does that mean", "how do i know", "huh", "i don't get it", "idk", "what?"
         ]
+    },
+    "declaring_origin_station": {
+        "patterns": [
+            "from", "leaving from", "departing", "departing from"
+        ]
+    },
+    "declaring_destination_station": {
+        "patterns": [
+            "to", "going to", "arriving", "arriving at"
+        ]
     }
 }

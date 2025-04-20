@@ -1,0 +1,93 @@
+#cd C:/Program Files/PostgreSQL/17/bin (replace 17 with postgre version)
+#createdb -h localhost -p 5432 -U postgres AIDB
+#Password: password
+import psycopg2
+def connectDB():
+    password = "password"
+    DBName = "AIDB"
+    #database connection
+    conn = psycopg2.connect(
+       database=DBName, user='postgres', password=password, host='127.0.0.1', port= '5432'
+    )
+    conn.autocommit = True
+    #this allows for command execution
+    cur = conn.cursor()
+    return conn, cur
+def runQuery(query, conn, cur):
+    #runs the query and closes the connection
+    cur.execute(query)
+    conn.commit()
+    cur.close()
+    conn.close
+    
+def createDatabase():
+    #creating the database
+    conn, cur = connectDB(DBName, password)
+    query = '''
+    CREATE TABLE IF NOT EXISTS recents (
+    id INTEGER GENERATED ALWAYS AS IDENTITY,
+    dep_location VARCHAR(100),
+    destination VARCHAR(100),
+    dep_time TIMESTAMP,
+    arrival_time TIMESTAMP
+    query_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    '''
+    runQuery(query, conn, cur)
+
+def insert_query(dep_loc, destination, dep_time, arrival_time):
+    conn, cur = connectDB()
+    #query inserts new query into database
+    query = '''
+    INSERT INTO recents (dep_location, destination, dep_time, arrival_time)
+    VALUES (%s, %s, %s, %s);
+    '''
+    cur.execute(query, (dep_loc, destination, dep_time, arrival_time))
+    #query deletes oldest if theres more than 5
+    query2 = '''
+    DELETE FROM recents
+    WHERE id IN (
+        SELECT id FROM recents
+        ORDER BY query_time DESC
+        OFFSET 5
+        );
+        '''
+    runQuery(query2, conn, cur)
+
+def getRecents():
+    conn, cur = connectDB()
+    #selects all rows and orders them by newest time of creation
+    query = '''
+    SELECT id, dep_location, destination, dep_time, arrival_time
+    FROM recents
+    ORDER BY query_time DESC;
+    '''
+    cur.execute(query)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+def openRecent(row):
+    #opens the selected query and returns the values
+    rows = getRecents()
+    recent = rows[recent]
+    recent = recent.split(",")
+    id, dep_location, destination, dep_time, arrival_time = recent
+    return id, dep_location, destination, dep_time, arrival_time
+
+def updateRecent(id, dep_location, destination, dep_time, arrival_time):
+    #updates the id of the row that was opened with new values
+    conn, cur = connectDB()
+    query = '''
+    UPDATE recents
+    SET dep_location = %s, destination = %s, dep_time = %s, arrival_time = %s, query_time = CURRENT_TIMESTAMP 
+    WHERE id = %s
+    '''
+    cur.execute(query, (dep_location, destination, dep_time, arrival_time, id))
+    conn.commit()
+    cur.close()
+    conn.close
+    
+
+

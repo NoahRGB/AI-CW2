@@ -32,7 +32,9 @@ class Chatbot:
         SELECT_TICKET=5,
         CONFIRMATION=6,
         SELECT_STATION=7,
-        NONE=8
+        NONE=8,
+        DECLARING_ORIGIN_STATION=9,
+        DECLARING_DESTINATION_STATION=10,
 
         @staticmethod
         def from_string(s): # turn string into an IntentionTypes enum
@@ -50,6 +52,10 @@ class Chatbot:
                 return Chatbot.IntentionTypes.SELECT_STATION
             elif s == "none":
                 return Chatbot.IntentionTypes.NONE
+            elif s == "declaring_origin_station":
+                return Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION
+            elif s == "declaring_destination_station":
+                return Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION
             return Chatbot.IntentionTypes.UNSURE
 
 
@@ -98,7 +104,7 @@ class Chatbot:
         return self.last_intention
 
     def detect_ticket_type(self, text, min_similarity=0.5):
-        # detect whether the text refers to a single ticket or a return ricket
+        # detect whether the text refers to a single ticket or a return ticket
         text_tokens = self.nlp(self.clean_text(text))
 
         for single_text in self.intentions["single_ticket"]["patterns"]:
@@ -161,7 +167,7 @@ class Chatbot:
 
 class Intention(Fact):
     # information about current user intention
-    # e.g. gretting, exit, task1, task2
+    # e.g. greeting, exit, task1, task2
     pass
 
 class Ticket(Fact):
@@ -199,18 +205,22 @@ class ChatbotEngine(KnowledgeEngine):
 
     def detect_all_info(self, text):
         detected_info = {}
+        
+        # for i in range(0, len(text) - 1):
+        #     if self.chatbot.find_user_intention(""+text[i]+" "+text[i+1]) == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
+        #         print(""+text[i]+" "+text[i+1])
 
-        ticket_type = self.chatbot.detect_ticket_type(text)
-        if ticket_type:
-            detected_info["ticket_type"] = ticket_type
+        # ticket_type = self.chatbot.detect_ticket_type(text)
+        # if ticket_type:
+        #     detected_info["ticket_type"] = ticket_type
         
-        station = self.chatbot.detect_station_name(text)
-        if station:
-            detected_info["origin_station"] = station
+        # station = self.chatbot.detect_station_name(text)
+        # if station:
+        #     detected_info["origin_station"] = station
         
-        date_time = self.chatbot.detect_date_time(text)
-        if date_time:
-            detected_info["departure_time"] = date_time
+        # date_time = self.chatbot.detect_date_time(text)
+        # if date_time:
+        #     detected_info["departure_time"] = date_time
 
         return detected_info
 
@@ -256,7 +266,8 @@ class ChatbotEngine(KnowledgeEngine):
         else:
             self.chatbot.send_bot_message(f"Ok, you still have a {ticket_type} ticket selected")
 
-    @Rule(Intention(type=Chatbot.IntentionTypes.SELECT_TICKET))
+    @Rule(OR(AND(~Ticket(), EXISTS(OriginStation())),
+             Intention(type=Chatbot.IntentionTypes.SELECT_TICKET)))
     def select_ticket(self):
         # need to select a return/single ticket
         found_type = None
@@ -277,19 +288,35 @@ class ChatbotEngine(KnowledgeEngine):
 
         if found_type: self.declare(Ticket(type=found_type))
         self.clear_chatbot_intention()
-    
-    @Rule(OR(AND(Intention(type=Chatbot.IntentionTypes.SELECT_STATION), Ticket(type=MATCH.ticket_type)), Ticket(type=MATCH.ticket_type)))
-    def select_origin_station(self, ticket_type):
+        
+    @Rule(OR(Intention(type=Chatbot.IntentionTypes.SELECT_STATION), 
+             Ticket(type=MATCH.ticket_type)))
+    def select_origin_station(self, ticket_type=None):
         # already selected a ticket type, need to select origin train station
 
         if self.chatbot.last_intention == Chatbot.IntentionTypes.SELECT_STATION:
             # check if the last message sent was a valid train station
+            
+            last = self.chatbot.last_message.split(" ")
+            for i in range(0, len(last) - 1):
+                pair = "" + last[i] + " " + last[i + 1]
+                print(pair)
+                if self.chatbot.find_user_intention(pair) == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
+                    for word in pair.split(" "):
+                        print(word)
+                        check = self.verify_station_choice(word)
+                        if check:
+                            station, code = check
+                            self.declare(OriginStation(name=station, code=code))
+                            
+            
+            
             initial_check = self.verify_station_choice(self.chatbot.last_message)
             if initial_check:
                 station, code = initial_check
                 self.declare(OriginStation(name=station, code=code))
         else:
-            # if it wasn't prompt the user to input a train station
+            # if it wasn't, prompt the user to input a train station
             self.chatbot.send_bot_message(f"You want a {ticket_type} ticket. Where do you want to start your journey?")
             origin_input = input()
             detected_station = self.verify_station_choice(origin_input)
@@ -300,7 +327,11 @@ class ChatbotEngine(KnowledgeEngine):
                 self.chatbot.send_bot_message("There seems to have been an issue. Try spelling your station differently, or ask me for something else")
                 self.clear_chatbot_intention()
         
-    @Rule(OR(AND(Intention(type=Chatbot.IntentionTypes.SELECT_STATION), Ticket(type=MATCH.ticket_type), OriginStation(name=MATCH.origin_name, code=MATCH.origin_code)), AND(Ticket(type=MATCH.ticket_type), OriginStation(name=MATCH.origin_name, code=MATCH.origin_code))))
+    @Rule(OR(AND(Intention(type=Chatbot.IntentionTypes.SELECT_STATION), 
+                 Ticket(type=MATCH.ticket_type), 
+                 OriginStation(name=MATCH.origin_name, code=MATCH.origin_code)), 
+             AND(Ticket(type=MATCH.ticket_type), 
+                 OriginStation(name=MATCH.origin_name, code=MATCH.origin_code))))
     def select_destination_station(self, ticket_type, origin_name, origin_code):
         # already selected ticket type & origin station, need to select destination station
         
@@ -322,7 +353,9 @@ class ChatbotEngine(KnowledgeEngine):
                 self.chatbot.send_bot_message("There seems to have been an issue. Try spelling your station differently, or ask me for something else")
                 self.clear_chatbot_intention()
     
-    @Rule(Ticket(type=MATCH.ticket_type), OriginStation(name=MATCH.origin_name, code=MATCH.origin_code), DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code))
+    @Rule(Ticket(type=MATCH.ticket_type), 
+          OriginStation(name=MATCH.origin_name, code=MATCH.origin_code), 
+          DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code))
     def select_departure_time(self, ticket_type, origin_name, origin_code, destination_name, destination_code):
         # already selected ticket type & origin/destination station, need to select a departure time
 
