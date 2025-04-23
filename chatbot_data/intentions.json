@@ -1,76 +1,81 @@
 {
-    "greeting": {
-        "patterns": [
-            "hello", "hi", "hey", "hey hey", "heyo", "whats up?"
-        ],
-        "responses": [
-            "Hey there. You can ask me about cheap train tickets",
-            "Hey, I can give you information about cheap train tickets"
-        ]
+    "intentions": {
+        "greeting": {
+                "patterns": [
+                    "hello", "hi", "hey", "hey hey", "heyo", "whats up?"
+                ],
+                "responses": [
+                    "Hey there. You can ask me about cheap train tickets",
+                    "Hey, I can give you information about cheap train tickets"
+                ]
+            },
+            "exit": {
+                "patterns": [
+                    "bye", "goodbye", "exit", "end"
+                ], 
+                "responses": [
+                    "Goodbye!", "Bye bye", "Thanks, bye!"
+                ]
+            },
+            "task1": {
+                "patterns": [
+                    "ticket",
+                    "cheapest",
+                    "cost",
+                    "Can you find the cheapest tickets?",
+                    "Can you find me some train tickets?",
+                    "I need train tickets",
+                    "plan a train journey for me",
+                    "plan a journey",
+                    "journey planner",
+                    "task 1",
+                    "do task 1",
+                    "link me to train tickets",
+                    "i want to travel on a train",
+                    "i want to get somewhere via train",
+                    "plan my train journey"
+                ]
+            },
+            "cancel": {
+                "patterns": [
+                    "go back", "exit", "cancel", "undo"
+                ]
+            },
+            "confirm": {
+                "patterns": [
+                    "yes", "correct", "that's right", "yep", "ok", "yeah", "true", "alright", "good"
+                ],
+                "responses": [
+                    "Ok"
+                ]
+            },
+            "single_ticket": {
+                "patterns": [
+                    "single", "single ticket", "one way", "normal ticket"
+                ]
+            },
+            "return_ticket": {
+                "patterns": [
+                    "return", "both ways", "two ways", "open return", "round trip", "return ticket"
+                ]
+            },
+            "unsure": {
+                "patterns": [
+                    "not sure", "i don't know", "what does that mean", "how do i know", "huh", "i don't get it", "idk", "what?"
+                ]
+            }
     },
-    "exit": {
-        "patterns": [
-            "bye", "goodbye", "exit", "end"
-        ], 
-        "responses": [
-            "Goodbye!", "Bye bye", "Thanks, bye!"
-        ]
-    },
-    "task1": {
-        "patterns": [
-            "ticket",
-            "cheapest",
-            "cost",
-            "Can you find the cheapest tickets?",
-            "Can you find me some train tickets?",
-            "I need train tickets",
-            "plan a train journey for me",
-            "plan a journey",
-            "journey planner",
-            "task 1",
-            "do task 1",
-            "link me to train tickets",
-            "i want to travel on a train",
-            "i want to get somewhere via train",
-            "plan my train journey"
-        ]
-    },
-    "cancel": {
-        "patterns": [
-            "go back", "exit", "cancel", "undo"
-        ]
-    },
-    "confirm": {
-        "patterns": [
-            "yes", "correct", "that's right", "yep", "ok", "yeah", "true", "alright", "good"
-        ],
-        "responses": [
-            "Ok"
-        ]
-    },
-    "single_ticket": {
-        "patterns": [
-            "single", "single ticket", "one way", "normal ticket"
-        ]
-    },
-    "return_ticket": {
-        "patterns": [
-            "return", "both ways", "two ways", "open return", "round trip", "return ticket"
-        ]
-    },
-    "unsure": {
-        "patterns": [
-            "not sure", "i don't know", "what does that mean", "how do i know", "huh", "i don't get it", "idk", "what?"
-        ]
-    },
-    "declaring_origin_station": {
-        "patterns": [
-            "from", "leaving from", "departing", "departing from"
-        ]
-    },
-    "declaring_destination_station": {
-        "patterns": [
-            "to", "going to", "arriving", "arriving at"
-        ]
+    
+    "declaring_stations": {
+        "declaring_origin_station": {
+            "patterns": [
+                "from", "leaving from", "departing", "departing from", "travel from", "travelling from"
+            ]
+        },
+        "declaring_destination_station": {
+            "patterns": [
+                "to", "going to", "arriving", "arriving at", "go to", "ticket to"
+            ]
+        }
     }
 }
