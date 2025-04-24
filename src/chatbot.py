@@ -1,11 +1,10 @@
 from random import choice
 import json
-import re
 from enum import Enum
 
 from date_time import DateTime
 from ticket_types import TicketTypes
-from cheapest_ticket import NationalRailScraper, TicketTypes
+from cheapest_ticket import TicketTypes
 
 from experta import *
 from difflib import get_close_matches, SequenceMatcher
