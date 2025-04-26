@@ -171,11 +171,11 @@ class ChatbotEngine(KnowledgeEngine):
                 station, code = detected_station
                 if looking_for_origin_station:
                     self.declare(OriginStation(name=station, code=code))
-                    if ~DestinationStation():
+                    if not self.has_fact(DestinationStation):
                         self.chatbot.send_bot_message(f"You have selected {station} station. Where do you want to travel to?")
                 else:
                     self.declare(DestinationStation(name=station, code=code))
-                    if ~OriginStation():
+                    if not self.has_fact(OriginStation):
                         self.chatbot.send_bot_message(f"You have selected {station} station. Where do you want to travel to?")
             else:
                 self.chatbot.send_bot_message("There seems to have been an issue. Try spelling your station differently, or ask me for something else")

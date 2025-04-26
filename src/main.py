@@ -18,5 +18,5 @@ while True:
     chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=chatbot.last_intention)
     chatbot.last_message = test_input
 
-    print(f"\n{chatbot_engine.facts}\n") # for debugging
+    # print(f"\n{chatbot_engine.facts}\n") # for debugging
     chatbot_engine.run()
