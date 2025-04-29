@@ -10,8 +10,6 @@ chatbot.find_user_intention("Hey")
 chatbot.last_intention_fact = chatbot_engine.modify(chatbot_engine.facts[1], type=chatbot.last_intention)
 chatbot_engine.run()
 
-
-
 while True:
     test_input = input()
     chatbot.find_user_intention(test_input)

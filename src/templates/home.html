@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+  <script src="{{ url_for('static',  filename='script.js') }}" defer></script>
+  <title>Chatbot</title>
+</head>
+
+<body>
+  <div class="flex-container">
+    <div class="centered header">
+      <h2>AI CW2 Chatbot</h2>
+    </div>
+  
+    <div class="chat-container" id="chatbox">
+  
+    </div>
+  
+    <div class="centered input-box-container">
+      <input type="text" class="wide-input-box" id="input-box">
+      <button class="button" id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+
+</body>
+
+</html>
