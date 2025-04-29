@@ -75,7 +75,7 @@
     "declaring_stations": {
         "declaring_origin_station": {
             "patterns": [
-                "from", "leaving from", "departing", "departing from", "travel from", "travelling from"
+                "from", "leaving from", "departing", "departing from", "travel from", "travelling from", "ticket from"
             ]
         },
         "declaring_destination_station": {

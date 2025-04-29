@@ -25,7 +25,7 @@ class Chatbot:
         # send a message
         UNSURE=1,
         GREETING=2,
-        TASK1=3,
+        TICKET_WALKTHROUGH=3,
         SELECT_TICKET=4,
         NONE=5,
         CONFIRM=6,
@@ -39,7 +39,7 @@ class Chatbot:
             if s == "greeting":
                 return Chatbot.IntentionTypes.GREETING
             elif s == "task1":
-                return Chatbot.IntentionTypes.TASK1
+                return Chatbot.IntentionTypes.TICKET_WALKTHROUGH
             elif s == "single_ticket" or s == "return_ticket":
                 return Chatbot.IntentionTypes.SELECT_TICKET
             elif s == "none":
@@ -106,19 +106,22 @@ class Chatbot:
         self.last_intention = Chatbot.IntentionTypes.UNSURE
         return self.last_intention
     
-    def detect_ticket_type(self, text, min_similarity=0.5):
+    def detect_ticket_type(self, text, min_similarity=0.9):
         # detect whether the text refers to a single ticket or a return ticket
-        text_tokens = self.nlp(self.clean_text(text))
+        to_check = self.split_string(text)
+        to_check = [self.nlp(self.clean_text(t)) for t in to_check]
+        # text_tokens = self.nlp(self.clean_text(text))
 
-        for single_text in self.intentions["intentions"]["single_ticket"]["patterns"]:
-            single_text_tokens = self.nlp(self.clean_text(single_text))
-            if single_text_tokens.similarity(text_tokens) > min_similarity:
-                return TicketTypes.SINGLE
-            
-        for return_text in self.intentions["intentions"]["return_ticket"]["patterns"]:
-            return_text_tokens = self.nlp(self.clean_text(return_text))
-            if return_text_tokens.similarity(text_tokens) > min_similarity:
-                return TicketTypes.RETURN
+        for text_tokens in to_check:
+            for single_text in self.intentions["intentions"]["single_ticket"]["patterns"]:
+                single_text_tokens = self.nlp(self.clean_text(single_text))
+                if single_text_tokens.similarity(text_tokens) > min_similarity:
+                    return TicketTypes.SINGLE
+                
+            for return_text in self.intentions["intentions"]["return_ticket"]["patterns"]:
+                return_text_tokens = self.nlp(self.clean_text(return_text))
+                if return_text_tokens.similarity(text_tokens) > min_similarity:
+                    return TicketTypes.RETURN
             
         return False
     
@@ -128,20 +131,36 @@ class Chatbot:
         # similarity to at least one station is over 60%
         text_tokens = self.nlp(self.clean_text(text))
         min_similarity = 0.9
-        
+        detected_stations = []
         to_check = text.split(" ")
         
-        for text in to_check:
-            matches = get_close_matches(text, self.station_dict.keys())
+        for t in to_check:
+            matches = get_close_matches(t, self.station_dict.keys())
             if len(matches) > 0:
                 best_match = matches[0]
 
-                sm = SequenceMatcher(None, text, best_match)
+                sm = SequenceMatcher(None, t, best_match)
                 score = sm.ratio()
                 if score >= min_similarity:
-                    return best_match.title(), self.station_dict[best_match].upper()
+                    detected_stations.append((best_match.title(), self.station_dict[best_match].upper(), self.find_station_type(text, best_match)))
             
-        return None
+        return None if len(detected_stations) == 0 else detected_stations
+    
+    def find_station_type(self, user_input, station_name):
+        before_station_name = user_input[:user_input.find(station_name)]
+        to_check = self.split_string(before_station_name)
+        declarations_found = []
+        for s in to_check:
+            for intention in self.intentions["declaring_stations"]:
+                for pattern in self.intentions["declaring_stations"][intention]["patterns"]:
+                    matches = get_close_matches(s, [pattern])
+                    if len(matches) > 0:
+                        best_match = matches[0]
+                        sm = SequenceMatcher(None, s, best_match)
+                        score = sm.ratio()
+                        if score >= 0.8:
+                            declarations_found.append(Chatbot.IntentionTypes.from_string(intention))
+        return None if len(declarations_found) == 0 else declarations_found[len(declarations_found) - 1]
     
     def split_string(self, s):
         # turns a string into every possible combination 
@@ -155,18 +174,6 @@ class Chatbot:
                 current += f" {s[j]}"
                 split.append(current)
         return split
-    
-    def detect_declaring_station(self, user_input):
-        # detects whether the input is trying to declare an origin
-        # station or a destination station
-        to_check = self.split_string(user_input)
-        for s in to_check:
-            for intention in self.intentions["declaring_stations"]:
-                for pattern in self.intentions["declaring_stations"][intention]["patterns"]:
-                    similarity = self.nlp(s).similarity(self.nlp(pattern))
-                    if similarity > 0.5:
-                        return Chatbot.IntentionTypes.from_string(intention)
-        return None
     
     def detect_date_time(self, text):
         # returns one DateTime object for the detected date & time in the provided text
@@ -187,6 +194,31 @@ class Chatbot:
         if detected_min == -1 or detected_hour == -1 or detected_day == -1 or detected_month == -1:
             return None
         return DateTime(hour=detected_hour, minute=detected_min, day=detected_day, month=detected_month)
+    
+    def detect_all_information(self, message):
+        detected = {}
+        
+        detected_ticket = self.detect_ticket_type(message)
+        if detected_ticket:
+            detected["ticket"] = detected_ticket
+        
+        detected_stations = self.detect_station_name(message)
+        
+        if detected_stations:
+            for station in detected_stations:
+                name, code, type = station
+                if type:
+                    if type == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
+                        detected["origin_station"] = (name, code)
+                    elif type == Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION:
+                        detected["destination_station"] = (name, code)
+                else:
+                    if "name" not in self.origin_station_fact:
+                        detected["origin_station"] = (name, code)
+                    elif "name" not in self.destination_station_fact:
+                        detected["destination_station"] = (name, code)
+                        
+        return detected
 
     def send_bot_message(self, message):
         print(f"\n{message}\n")

@@ -23,9 +23,10 @@ class ChatbotEngine(KnowledgeEngine):
         print(f"\n cleared intentions\n{self.facts}\n")
         
     def find_next_station_type(self):
-        if self.chatbot.detect_declaring_station(self.chatbot.last_message) == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
+        declaring_stations = self.chatbot.detect_declaring_station(self.chatbot.last_message)
+        if declaring_stations and declaring_stations[0] == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
             return Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION
-        elif self.chatbot.detect_declaring_station(self.chatbot.last_message) == Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION:
+        elif declaring_stations and declaring_stations[0] == Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION:
             return Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION
         else:
             if self.chatbot.origin_station_fact["pending"] == True:
@@ -38,48 +39,66 @@ class ChatbotEngine(KnowledgeEngine):
         # setup the initial facts
         yield Intention(type=Chatbot.IntentionTypes.UNSURE)
         
-    @Rule(Intention(type=Chatbot.IntentionTypes.TASK1))
-    def begin_task_one(self):
-        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.SELECT_TICKET)
-    
-    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM), Ticket(type=W(), pending=True))
-    def confirm_pending_ticket(self):
+    @Rule(Intention(type=Chatbot.IntentionTypes.GREETING))
+    def greeting(self):
+        self.chatbot.send_bot_message(choice(self.chatbot.intentions["intentions"]["greeting"]["responses"]))
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.THANKS))
+    def thanks(self):
+        self.chatbot.send_bot_message(choice(self.chatbot.intentions["intentions"]["thanks"]["responses"]))
+        
+    @Rule(AND(OR(Intention(type=Chatbot.IntentionTypes.NONE), Intention(type=Chatbot.IntentionTypes.UNSURE)),
+              AND(~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=True)
+                  & ~DestinationStation(name=W(), code=W(), pending=True))))
+    def unsure(self):
+        self.chatbot.send_bot_message("I'm unsure what you mean, but you can ask me about train tickets!")
+
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) & Ticket(type=MATCH.ticket_type, pending=True))
+    def prompt_ticket_confirmation(self, ticket_type):
+        self.chatbot.send_bot_message(f"Are you sure you want a {ticket_type} ticket?")
+        print(f"From ticket prompt confirmation:\n{self.facts}\n")
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & Ticket(type=MATCH.ticket_type, pending=True))
+    def confirm_pending_ticket(self, ticket_type):
         self.chatbot.ticket_fact = self.modify(self.chatbot.ticket_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        print(f"From ticket confirmation:\n{self.facts}\n")
     
-    @Rule(Intention(type=Chatbot.IntentionTypes.SELECT_TICKET))
+    @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & ~Ticket(pending=False) & ~Ticket(type=W(), pending=True))
     def select_ticket(self):
-        detected_ticket = self.chatbot.detect_ticket_type(self.chatbot.last_message, 0.9)
-        if detected_ticket:
-            self.chatbot.ticket_fact = self.modify(self.chatbot.ticket_fact, type=detected_ticket, pending=True)
-            self.chatbot.send_bot_message(f"Are you sure you want a {detected_ticket} ticket?")
-        else:
-            self.chatbot.send_bot_message("What type of ticket do you need? (single, return)")
-            
-    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM), OriginStation(name=W(), code=W(), pending=True))
+        self.chatbot.send_bot_message("What type of ticket do you need? (single, return)")
+    
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) 
+          & OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=True))
+    def prompt_origin_station_confirmation(self, origin_name, origin_code):
+        self.chatbot.send_bot_message(f"Confirm origin station {origin_name} ({origin_code})?")
+        
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) 
+          & DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=True))
+    def prompt_destination_station_confirmation(self, destination_name, destination_code):
+        self.chatbot.send_bot_message(f"Confirm destination station {destination_name} ({destination_code})?")
+    
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & OriginStation(name=W(), code=W(), pending=True) 
+          & ~Ticket(type=MATCH.ticket_type, pending=True))
     def confirm_pending_origin_station(self):
         self.chatbot.origin_station_fact = self.modify(self.chatbot.origin_station_fact, pending=False, needs_confirmation=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
         
-    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM), DestinationStation(name=W(), code=W(), pending=True))
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & DestinationStation(name=W(), code=W(), pending=True) 
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True))
     def confirm_pending_destination_station(self):
         self.chatbot.destination_station_fact = self.modify(self.chatbot.destination_station_fact, pending=False, needs_confirmation=False)
-            
-    @Rule(EXISTS(Intention()), Ticket(type=MATCH.ticket_type, pending=False), OriginStation(pending=True, needs_confirmation=False) | DestinationStation(pending=True, needs_confirmation=False))
-    def select_stations(self, ticket_type):
-        print("SELECTING STATIONS")
-        detected_station = self.chatbot.detect_station_name(self.chatbot.last_message)
-        station_type = self.find_next_station_type()
-        if detected_station:
-            station, code = detected_station
-            if station_type == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
-                self.chatbot.origin_station_fact = self.modify(self.chatbot.origin_station_fact, name=station, code=code, pending=True, needs_confirmation=True)
-            elif station_type == Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION:
-                self.chatbot.destination_station_fact = self.modify(self.chatbot.destination_station_fact, name=station, code=code, pending=True, needs_confirmation=True)
-            self.chatbot.send_bot_message(f"You chose {station} ({code}). Is that right?")
-        else:
-            if station_type == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
-                self.chatbot.send_bot_message(f"You've selected a {ticket_type} ticket. Where are you travelling from?")
-            elif station_type == Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION:
-                self.chatbot.send_bot_message(f"You've selected a {ticket_type} ticket. Where are you travelling to?")
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False) 
+          & ~OriginStation(pending=False), salience=0)
+    def select_origin_station(self, ticket_type):
+        self.chatbot.send_bot_message(f"You have selected a {ticket_type} ticket. Where are you travelling from?")
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False) 
+          & ~DestinationStation(pending=False), salience=1)
+    def select_destination_station(self, ticket_type):
+        self.chatbot.send_bot_message(f"You have selected a {ticket_type} ticket. Where are you travelling to?")
                 
     @Rule(EXISTS(Intention()),
           Ticket(type=MATCH.ticket_type, pending=False),
@@ -102,14 +121,3 @@ class ChatbotEngine(KnowledgeEngine):
         else:
             self.chatbot.send_bot_message(f"When do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
         
-    @Rule(Intention(type=Chatbot.IntentionTypes.GREETING))
-    def greeting(self):
-        self.chatbot.send_bot_message(choice(self.chatbot.intentions["intentions"]["greeting"]["responses"]))
-        
-    @Rule(Intention(type=Chatbot.IntentionTypes.THANKS))
-    def thanks(self):
-        self.chatbot.send_bot_message(choice(self.chatbot.intentions["intentions"]["thanks"]["responses"]))
-        
-    @Rule(OR(Intention(type=Chatbot.IntentionTypes.NONE), Intention(type=Chatbot.IntentionTypes.UNSURE)))
-    def confirm(self):
-        self.chatbot.send_bot_message("I'm unsure what you mean, but you can ask me about train tickets!")

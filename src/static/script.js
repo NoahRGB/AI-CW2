@@ -1,4 +1,5 @@
 
+let isChatbotTurn = false;
 let isFirstMessage = true;
 let inputBox = document.getElementById("input-box");
 let chatbox = document.getElementById("chatbox");
@@ -15,13 +16,15 @@ const addToChatbox = (message, isUser) => {
 const getChatbotMessage = userInput => {
   $.post("/get_chatbot_message", { user_input: userInput, is_first_message: isFirstMessage }, chatbot_message => {
     console.log("Message: " + chatbot_message)
-    addToChatbox(chatbot_message, false)
+    isChatbotTurn = false;
+    addToChatbox(chatbot_message, false);
   });
 }
 
 const sendMessage = () => {
   let userMessage = inputBox.value;
   !isFirstMessage && addToChatbox(userMessage, true)
+  isChatbotTurn = true;
   getChatbotMessage(userMessage);
   inputBox.value = ""
 }

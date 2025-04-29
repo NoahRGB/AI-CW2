@@ -10,6 +10,26 @@ app = Flask(__name__)
 chatbot = Chatbot()
 chatbot_engine = ChatbotEngine(chatbot)
 
+def declare_all_information(user_input):
+  information = chatbot.detect_all_information(user_input)
+  
+  print(information)
+  
+  if "ticket" in information:
+    if "type" not in chatbot.ticket_fact or chatbot.ticket_fact["pending"] == True:
+      chatbot.ticket_fact = chatbot_engine.modify(chatbot.ticket_fact, type=information["ticket"])
+
+  if "origin_station" in information:
+    station, code = information["origin_station"]
+    if chatbot.origin_station_fact["pending"] == True:
+      chatbot.origin_station_fact = chatbot_engine.modify(chatbot.origin_station_fact, name=station, code=code)
+      
+  if "destination_station" in information:
+    station, code = information["destination_station"]
+    if chatbot.destination_station_fact["pending"] == True:
+      chatbot.destination_station_fact = chatbot_engine.modify(chatbot.destination_station_fact, name=station, code=code)
+
+
 # route to render the homepage
 @app.route("/")
 def home():
@@ -28,13 +48,14 @@ def get_chatbot_message():
     chatbot.ticket_fact = chatbot_engine.declare(Ticket(pending=True))
     chatbot.origin_station_fact = chatbot_engine.declare(OriginStation(pending=True, needs_confirmation=False))
     chatbot.destination_station_fact = chatbot_engine.declare(DestinationStation(pending=True, needs_confirmation=False))
-
-
+    
   else: # otherwise, use the user's message
     chatbot.find_user_intention(user_input)
+    print(f"Changing intention to {chatbot.last_intention}")
     chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=chatbot.last_intention)
     chatbot.last_message = user_input
   
+  declare_all_information(user_input)
   print(f"\nRunning engine with facts:\n{chatbot_engine.facts}\n")
   chatbot_engine.run()
   return chatbot.last_chatbot_message
