@@ -11,10 +11,10 @@
         },
         "exit": {
             "patterns": [
-                "bye", "goodbye", "exit", "end"
+                "bye", "goodbye", "exit", "end", "bye bye"
             ], 
             "responses": [
-                "Goodbye!", "Bye bye", "Thanks, bye!"
+                "Goodbye! &#128075;", "Bye bye &#128075;", "Thanks, bye! &#128075;"
             ]
         },
         "task1": {
@@ -58,7 +58,7 @@
         },
         "confirm": {
             "patterns": [
-                "yes", "correct", "that's right", "yep", "ok", "yeah", "true", "alright", "good"
+                "yes", "correct", "that's right", "yep", "ok", "yeah", "true", "alright", "good", "uh huh"
             ]
         },
         "thanks": {
@@ -85,9 +85,15 @@
         }
     },
 
-    "confirm": {
+    "adults": {
         "patterns": [
-            "yes", "correct", "that's right", "yep", "ok", "yeah", "true", "alright", "good"
+            "adults", "adult", "grown ups", "grown up"
+        ]
+    },
+
+    "children": {
+        "patterns": [
+            "children", "child", "baby"
         ]
     }
 }

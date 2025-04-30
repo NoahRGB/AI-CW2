@@ -48,11 +48,17 @@ class ChatbotEngine(KnowledgeEngine):
     def thanks(self):
         self.chatbot.send_bot_message(choice(self.chatbot.intentions["intentions"]["thanks"]["responses"]))
         
+    @Rule(Intention(type=Chatbot.IntentionTypes.EXIT))
+    def exit(self):
+        self.chatbot.send_bot_message(choice(self.chatbot.intentions["intentions"]["exit"]["responses"]))
+        
     @Rule(AND(OR(Intention(type=Chatbot.IntentionTypes.NONE), Intention(type=Chatbot.IntentionTypes.UNSURE)),
               AND(~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=True)
                   & ~DestinationStation(name=W(), code=W(), pending=True)
                   & ~DepartureTime(time=W(), pending=True)
-                  & ~DepartureDate(date=W(), pending=True))))
+                  & ~DepartureDate(date=W(), pending=True)
+                  & ~AdultTickets(count=W(), pending=True)
+                  & ~ChildTickets(count=W(), pending=True))))
     def unsure(self):
         self.chatbot.send_bot_message("I'm unsure what you mean, but you can ask me about train tickets!")
 
@@ -139,26 +145,54 @@ class ChatbotEngine(KnowledgeEngine):
           & DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=False)
           & ~DepartureDate(pending=False))
     def select_departure_date(self, ticket_type, origin_name, origin_code, destination_name, destination_code):
-        self.chatbot.send_bot_message(f"When do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")    
+        self.chatbot.send_bot_message(f"When do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
+        
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) 
+          & AdultTickets(count=MATCH.adult_tickets_count, pending=True))
+    def prompt_adult_tickets_confirmation(self, adult_tickets_count):
+        self.chatbot.send_bot_message(f"Do you want {adult_tickets_count} adult tickets?")
+        
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) 
+          & ChildTickets(count=MATCH.child_tickets_count, pending=True))
+    def prompt_child_tickets_confirmation(self, child_tickets_count):
+        self.chatbot.send_bot_message(f"Do you want {child_tickets_count} child tickets?")
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & AdultTickets(count=W(), pending=True) 
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True) & ~DepartureTime(time=W(), pending=True)
+          & ~DepartureDate(date=W(), pending=True))
+    def confirm_pending_adult_tickets(self):
+        self.chatbot.adult_tickets_fact = self.modify(self.chatbot.adult_tickets_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & ChildTickets(count=W(), pending=True) 
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True) & ~DepartureTime(time=W(), pending=True)
+          & ~DepartureDate(date=W(), pending=True) & ~AdultTickets(count=W(), pending=True))
+    def confirm_pending_child_tickets(self):
+        self.chatbot.child_tickets_fact = self.modify(self.chatbot.child_tickets_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
     
     @Rule(Ticket(type=MATCH.ticket_type, pending=False)
           & OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=False)
           & DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=False)
           & DepartureTime(time=MATCH.departure_time, pending=False)
-          & DepartureDate(date=MATCH.departure_date, pending=False))
-    def get_cheapest_ticket(self, ticket_type, origin_name, origin_code, destination_name, destination_code, departure_time, departure_date):
-        print("getting cheapest ticket")
+          & DepartureDate(date=MATCH.departure_date, pending=False)
+          & AdultTickets(count=MATCH.adult_count, pending=False)
+          & ChildTickets(count=MATCH.child_count, pending=False))
+    def get_cheapest_ticket(self, ticket_type, origin_name, origin_code, destination_name, destination_code, departure_time, departure_date, adult_count, child_count):
+        print("Getting cheapest ticket")
         
         total_departure_time = DateTime(minute=departure_time.get_min(),
                                         hour=departure_time.get_hour(),
                                         day=departure_date.day,
                                         month=departure_date.month)
 
-        scraper = NationalRailScraper(origin_code, destination_code, total_departure_time, 1, 0)
+        scraper = NationalRailScraper(origin_code, destination_code, total_departure_time, int(adult_count), int(child_count))
         scraper.set_single_ticket(total_departure_time)
 
         scraper.launch_scraper()
         scraper.clear_cookies_popup()
         cheapest = scraper.get_cheapest_listed()
-        self.chatbot.send_bot_message(f"Cheapest ticket from {origin_name} to {destination_name} leaving after {total_departure_time.get_date()} at {total_departure_time.get_time()}:<br>⏰ Departure time: {cheapest['departure_time']}<br>⏰ Arrival time: {cheapest['arrival_time']}<br>⏰ Duration: {cheapest['length']}<br>💵 Price: {cheapest['price']}<br>🌐 Link: <a class='dark' target='_blank' href='{scraper.get_current_url()}'>click here</a>")
+        self.chatbot.send_bot_message(f"Cheapest ticket from {origin_name} to {destination_name} leaving after {total_departure_time.get_date()} at {total_departure_time.get_time()} ({adult_count} adults and {child_count} children):<br>⏰ Departure time: {cheapest['departure_time']}<br>⏰ Arrival time: {cheapest['arrival_time']}<br>⏰ Duration: {cheapest['length']}<br>💵 Price: {cheapest['price']}<br>🌐 Link: <a class='dark' target='_blank' href='{scraper.get_current_url()}'>click here</a>")
 

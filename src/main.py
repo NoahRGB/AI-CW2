@@ -13,8 +13,6 @@ chatbot_engine = ChatbotEngine(chatbot)
 def declare_all_information(user_input):
   information = chatbot.detect_all_information(user_input)
   
-  print(information)
-  
   if "ticket" in information:
     if "type" not in chatbot.ticket_fact or chatbot.ticket_fact["pending"] == True:
       chatbot.ticket_fact = chatbot_engine.modify(chatbot.ticket_fact, type=information["ticket"])
@@ -36,6 +34,12 @@ def declare_all_information(user_input):
   if "date" in information:
     if chatbot.departure_date_fact["pending"] == True:
       chatbot.departure_date_fact = chatbot_engine.modify(chatbot.departure_date_fact, date=information["date"])
+      
+  if "adults" in information:
+    chatbot.adult_tickets_fact = chatbot_engine.modify(chatbot.adult_tickets_fact, count=information["adults"], pending=True)
+    
+  if "children" in information:
+    chatbot.child_tickets_fact = chatbot_engine.modify(chatbot.child_tickets_fact, count=information["children"], pending=True)
 
 # route to render the homepage
 @app.route("/")
@@ -57,6 +61,8 @@ def get_chatbot_message():
     chatbot.destination_station_fact = chatbot_engine.declare(DestinationStation(pending=True))
     chatbot.departure_time_fact = chatbot_engine.declare(DepartureTime(pending=True))
     chatbot.departure_date_fact = chatbot_engine.declare(DepartureDate(pending=True))
+    chatbot.adult_tickets_fact = chatbot_engine.declare(AdultTickets(count=1, pending=False))
+    chatbot.child_tickets_fact = chatbot_engine.declare(ChildTickets(count=0, pending=False))
     
   else: # otherwise, use the user's message
     chatbot.find_user_intention(user_input)

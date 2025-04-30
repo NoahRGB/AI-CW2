@@ -23,10 +23,14 @@ const getChatbotMessage = userInput => {
 
 const sendMessage = () => {
   let userMessage = inputBox.value;
-  !isFirstMessage && addToChatbox(userMessage, true)
-  isChatbotTurn = true;
-  getChatbotMessage(userMessage);
-  inputBox.value = ""
+  if (isFirstMessage | userMessage != "") {
+    !isFirstMessage && addToChatbox(userMessage, true)
+    isChatbotTurn = true;
+    getChatbotMessage(userMessage);
+    inputBox.value = ""
+  } else {
+    alert("Please enter a message before sending");
+  }
 }
 
 document.body.addEventListener("keypress", event => {

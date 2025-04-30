@@ -33,6 +33,7 @@ class Chatbot:
         DECLARING_ORIGIN_STATION=8,
         DECLARING_DESTINATION_STATION=9,
         THANKS=10,
+        EXIT=11,
 
         @staticmethod
         def from_string(s): # turn string into an IntentionTypes enum
@@ -54,6 +55,8 @@ class Chatbot:
                 return Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION
             elif s == "thanks":
                 return Chatbot.IntentionTypes.THANKS
+            elif s == "exit":
+                return Chatbot.IntentionTypes.EXIT
             else:
                 return Chatbot.IntentionTypes.UNSURE
 
@@ -64,10 +67,6 @@ class Chatbot:
         self.last_intention = None # stores the most recent intention
         self.last_intention_fact = None # stores the most recent Experta intention fact
         self.last_chatbot_message = None # stores the most recent chatbot message
-        
-        self.ticket_fact = None
-        self.origin_station_fact = None
-        self.destination_station_fact = None
 
         # load list of UK train stations from generate_stations.py
         with open("../chatbot_data/station_list.pickle", "rb") as f:
@@ -88,7 +87,7 @@ class Chatbot:
     
     def find_user_intention(self, user_input, min_similarity=0.7):
         # find what kind of message the user sent using Chatbot.IntentionTypes
-        user_input = self.clean_text(user_input)
+        user_input = self.clean_text(user_input.lower())
         user_input_tokens = self.nlp(user_input)
 
         for intention in self.intentions["intentions"]:
@@ -97,11 +96,6 @@ class Chatbot:
                 if sm > min_similarity:
                     self.last_intention = Chatbot.IntentionTypes.from_string(intention)
                     return self.last_intention
-                
-        # station_detect = self.detect_station_name(user_input)
-        # if station_detect:
-        #     self.last_intention = Chatbot.IntentionTypes.SELECT_STATION
-        #     return self.last_intention
                     
         self.last_intention = Chatbot.IntentionTypes.UNSURE
         return self.last_intention
@@ -134,12 +128,13 @@ class Chatbot:
         detected_stations = []
         to_check = text.split(" ")
         
-        for t in to_check:
-            matches = get_close_matches(t, self.station_dict.keys())
+        for part in to_check:
+            part = part.lower()
+            matches = get_close_matches(part, self.station_dict.keys())
             if len(matches) > 0:
                 best_match = matches[0]
 
-                sm = SequenceMatcher(None, t, best_match)
+                sm = SequenceMatcher(None, part, best_match)
                 score = sm.ratio()
                 if score >= min_similarity:
                     detected_stations.append((best_match.title(), self.station_dict[best_match].upper(), self.find_station_type(text, best_match)))
@@ -152,14 +147,15 @@ class Chatbot:
         declarations_found = []
         for s in to_check:
             for intention in self.intentions["declaring_stations"]:
-                for pattern in self.intentions["declaring_stations"][intention]["patterns"]:
-                    matches = get_close_matches(s, [pattern])
-                    if len(matches) > 0:
-                        best_match = matches[0]
-                        sm = SequenceMatcher(None, s, best_match)
-                        score = sm.ratio()
-                        if score >= 0.8:
-                            declarations_found.append(Chatbot.IntentionTypes.from_string(intention))
+                matches = get_close_matches(s, self.intentions["declaring_stations"][intention]["patterns"])
+                if len(matches) > 0:
+                    best_match = matches[0]
+                    sm = SequenceMatcher(None, s, best_match)
+                    score = sm.ratio()
+                    if score >= 0.8:
+                        declarations_found.append(Chatbot.IntentionTypes.from_string(intention))
+                
+                
         return None if len(declarations_found) == 0 else declarations_found[len(declarations_found) - 1]
     
     def split_string(self, s):
@@ -199,33 +195,61 @@ class Chatbot:
             return None
         return DateTime(hour=detected_hour, minute=detected_min)
     
-    def detect_date_time(self, text):
-        # returns one DateTime object for the detected date & time in the provided text
-        # returns None if there is no date or time
-        text_tokens = self.nlp(text)
-        detected_hour, detected_min, detected_day, detected_month = -1, -1, -1, -1
-
-        detected_date = DateTime.find_valid_date(text)
-        if detected_date:
-            detected_day = int(detected_date.day)
-            detected_month = int(detected_date.month)
-
-        detected_time = DateTime.find_valid_time(text)
-        if detected_time:
-            detected_min = int(detected_time.get_min())
-            detected_hour = int(detected_time.get_hour())
-
-        if detected_min == -1 or detected_hour == -1 or detected_day == -1 or detected_month == -1:
-            return None
-        return DateTime(hour=detected_hour, minute=detected_min, day=detected_day, month=detected_month)
+    def detect_adults(self, message):
+        to_check = self.split_string(message)
+        
+        for text in to_check:
+            matches = get_close_matches(text, self.intentions["adults"]["patterns"])
+            if len(matches) > 0:
+                best_match = matches[0]
+                sm = SequenceMatcher(None, text, best_match)
+                score = sm.ratio()
+                if score >= 0.8:
+                    adult_count = self.find_closest_number(message, best_match)
+                    if adult_count:
+                        return adult_count
+        return None
+    
+    def detect_children(self, message):
+        to_check = self.split_string(message)
+        
+        for text in to_check:
+            matches = get_close_matches(text, self.intentions["children"]["patterns"])
+            if len(matches) > 0:
+                best_match = matches[0]
+                sm = SequenceMatcher(None, text, best_match)
+                score = sm.ratio()
+                if score >= 0.8:
+                    children_count = self.find_closest_number(message, best_match)
+                    if children_count:
+                        return children_count
+        return None
+    
+    def find_closest_number(self, text, word):
+        split_text = text.split(" ")
+        print(f"{split_text}, {word}")
+        index = split_text.index(word)
+        before, after = None, None
+        if index != 0:
+            before = split_text[index - 1]
+        if index != (len(split_text) - 1):
+            after = split_text[index + 1]
+        
+        if before and before.isnumeric():
+            return int(before) 
+        elif after and after.isnumeric():
+            return int(after)
+        return None
     
     def detect_all_information(self, message):
         detected = {}
         
+        # find any ticket types in message
         detected_ticket = self.detect_ticket_type(message)
         if detected_ticket:
             detected["ticket"] = detected_ticket
         
+        # find any stations in message
         detected_stations = self.detect_station_name(message)
         if detected_stations:
             for station in detected_stations:
@@ -241,14 +265,27 @@ class Chatbot:
                     elif "name" not in self.destination_station_fact:
                         detected["destination_station"] = (name, code)
 
+        # find any times in message
         detected_time = self.detect_time(message)
         if detected_time:
             detected["time"] = detected_time
         
+        # find any dates in message
         detected_date = self.detect_date(message)
         if detected_date:
             detected["date"] = detected_date
             
+        # find any adults in message
+        detected_adults = self.detect_adults(message);
+        if detected_adults:
+            detected["adults"] = detected_adults
+            
+        # find any children in message
+        detected_children = self.detect_children(message);
+        if detected_children:
+            detected["children"] = detected_children
+            
+        # return everything that was found
         return detected
 
     def send_bot_message(self, message):

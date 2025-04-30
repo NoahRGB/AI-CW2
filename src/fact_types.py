@@ -21,3 +21,9 @@ class DepartureTime(Fact):
 
 class DepartureDate(Fact):
     pass
+
+class AdultTickets(Fact):
+    pass
+
+class ChildTickets(Fact):
+    pass
