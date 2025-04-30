@@ -39,8 +39,20 @@ class DateTime:
     def get_hour(self):
         return f"{'0' if self.__hour < 10 else ''}{self.__hour}"
     
+    def get_day(self):
+        return f"{'0' if self.day < 10 else ''}{self.day}"
+    
+    def get_month(self):
+        return f"{'0' if self.month < 10 else ''}{self.month}"
+    
+    def get_year(self):
+        return f"{self.year}"
+
     def get_time(self):
         return f"{self.get_hour()}:{self.get_min()}"
+    
+    def get_date(self):
+        return f"{self.get_day()}/{self.get_month()}/{self.get_year()}"
     
     def __lt__(self, other):
         if isinstance(other, DateTime): # DateTime is less than another DateTime

@@ -29,6 +29,13 @@ def declare_all_information(user_input):
     if chatbot.destination_station_fact["pending"] == True:
       chatbot.destination_station_fact = chatbot_engine.modify(chatbot.destination_station_fact, name=station, code=code)
 
+  if "time" in information:
+    if chatbot.departure_time_fact["pending"] == True:
+      chatbot.departure_time_fact = chatbot_engine.modify(chatbot.departure_time_fact, time=information["time"])
+
+  if "date" in information:
+    if chatbot.departure_date_fact["pending"] == True:
+      chatbot.departure_date_fact = chatbot_engine.modify(chatbot.departure_date_fact, date=information["date"])
 
 # route to render the homepage
 @app.route("/")
@@ -46,8 +53,10 @@ def get_chatbot_message():
     chatbot.find_user_intention("Hey")
     chatbot.last_intention_fact = chatbot_engine.modify(chatbot_engine.facts[1], type=chatbot.last_intention)
     chatbot.ticket_fact = chatbot_engine.declare(Ticket(pending=True))
-    chatbot.origin_station_fact = chatbot_engine.declare(OriginStation(pending=True, needs_confirmation=False))
-    chatbot.destination_station_fact = chatbot_engine.declare(DestinationStation(pending=True, needs_confirmation=False))
+    chatbot.origin_station_fact = chatbot_engine.declare(OriginStation(pending=True))
+    chatbot.destination_station_fact = chatbot_engine.declare(DestinationStation(pending=True))
+    chatbot.departure_time_fact = chatbot_engine.declare(DepartureTime(pending=True))
+    chatbot.departure_date_fact = chatbot_engine.declare(DepartureDate(pending=True))
     
   else: # otherwise, use the user's message
     chatbot.find_user_intention(user_input)

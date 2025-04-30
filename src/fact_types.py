@@ -18,3 +18,6 @@ class DepartureTime(Fact):
     # information about the departure time
     # stores a DateTime object
     pass
+
+class DepartureDate(Fact):
+    pass

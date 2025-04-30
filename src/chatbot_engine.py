@@ -2,6 +2,7 @@ from random import choice
 
 from ticket_types import TicketTypes
 from cheapest_ticket import NationalRailScraper, TicketTypes
+from date_time import DateTime
 from fact_types import *
 
 from experta import *
@@ -49,7 +50,9 @@ class ChatbotEngine(KnowledgeEngine):
         
     @Rule(AND(OR(Intention(type=Chatbot.IntentionTypes.NONE), Intention(type=Chatbot.IntentionTypes.UNSURE)),
               AND(~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=True)
-                  & ~DestinationStation(name=W(), code=W(), pending=True))))
+                  & ~DestinationStation(name=W(), code=W(), pending=True)
+                  & ~DepartureTime(time=W(), pending=True)
+                  & ~DepartureDate(date=W(), pending=True))))
     def unsure(self):
         self.chatbot.send_bot_message("I'm unsure what you mean, but you can ask me about train tickets!")
 
@@ -81,13 +84,13 @@ class ChatbotEngine(KnowledgeEngine):
     @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & OriginStation(name=W(), code=W(), pending=True) 
           & ~Ticket(type=MATCH.ticket_type, pending=True))
     def confirm_pending_origin_station(self):
-        self.chatbot.origin_station_fact = self.modify(self.chatbot.origin_station_fact, pending=False, needs_confirmation=False)
+        self.chatbot.origin_station_fact = self.modify(self.chatbot.origin_station_fact, pending=False)
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
         
     @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & DestinationStation(name=W(), code=W(), pending=True) 
           & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True))
     def confirm_pending_destination_station(self):
-        self.chatbot.destination_station_fact = self.modify(self.chatbot.destination_station_fact, pending=False, needs_confirmation=False)
+        self.chatbot.destination_station_fact = self.modify(self.chatbot.destination_station_fact, pending=False)
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
         
     @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False) 
@@ -99,25 +102,63 @@ class ChatbotEngine(KnowledgeEngine):
           & ~DestinationStation(pending=False), salience=1)
     def select_destination_station(self, ticket_type):
         self.chatbot.send_bot_message(f"You have selected a {ticket_type} ticket. Where are you travelling to?")
-                
-    @Rule(EXISTS(Intention()),
-          Ticket(type=MATCH.ticket_type, pending=False),
-          OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=False, needs_confirmation=False),
-          DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=False, needs_confirmation=False),
-          ~DepartureTime())
-    def select_departure_time(self, ticket_type, origin_name, origin_code, destination_name, destination_code):
-        print("selecting departure time")
-        detected_departure_time = self.chatbot.detect_date_time(self.chatbot.last_message)
-        if detected_departure_time:
-            self.declare(DepartureTime(time=detected_departure_time))
-            scraper = NationalRailScraper(origin_code, destination_code, detected_departure_time, 1, 0)
-
-            scraper.set_single_ticket(detected_departure_time)
-
-            scraper.launch_scraper()
-            scraper.clear_cookies_popup()
-            cheapest = scraper.get_cheapest_listed()
-            self.chatbot.send_bot_message(f"Cheapest ticket from {origin_name} to {destination_name} leaving after {detected_departure_time}:<br>Departure time: {cheapest['departure_time']}<br>Arrival time: {cheapest['arrival_time']}<br>Duration: {cheapest['length']}<br>Price: {cheapest['price']}<br>Link: <a class='dark' target='_blank' href='{scraper.get_current_url()}'>click here</a>")
-        else:
-            self.chatbot.send_bot_message(f"When do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
         
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) 
+          & DepartureTime(time=MATCH.departure_time, pending=True))
+    def prompt_departure_time_confirmation(self, departure_time):
+        self.chatbot.send_bot_message(f"Did you mean {departure_time.get_time()}?")
+        
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) 
+          & DepartureDate(date=MATCH.departure_date, pending=True))
+    def prompt_departure_date_confirmation(self, departure_date):
+        self.chatbot.send_bot_message(f"Did you mean {departure_date.get_date()}?")
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & DepartureTime(time=W(), pending=True) 
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True))
+    def confirm_pending_departure_time(self):
+        self.chatbot.departure_time_fact = self.modify(self.chatbot.departure_time_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & DepartureDate(date=W(), pending=True) 
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True) & ~DepartureTime(time=W(), pending=True))
+    def confirm_pending_departure_date(self):
+        self.chatbot.departure_date_fact = self.modify(self.chatbot.departure_date_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False)
+          & OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=False)
+          & DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=False)
+          & ~DepartureTime(pending=False))
+    def select_departure_time(self, ticket_type, origin_name, origin_code, destination_name, destination_code):
+        self.chatbot.send_bot_message(f"What time do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False)
+          & OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=False)
+          & DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=False)
+          & ~DepartureDate(pending=False))
+    def select_departure_date(self, ticket_type, origin_name, origin_code, destination_name, destination_code):
+        self.chatbot.send_bot_message(f"When do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")    
+    
+    @Rule(Ticket(type=MATCH.ticket_type, pending=False)
+          & OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=False)
+          & DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=False)
+          & DepartureTime(time=MATCH.departure_time, pending=False)
+          & DepartureDate(date=MATCH.departure_date, pending=False))
+    def get_cheapest_ticket(self, ticket_type, origin_name, origin_code, destination_name, destination_code, departure_time, departure_date):
+        print("getting cheapest ticket")
+        
+        total_departure_time = DateTime(minute=departure_time.get_min(),
+                                        hour=departure_time.get_hour(),
+                                        day=departure_date.day,
+                                        month=departure_date.month)
+
+        scraper = NationalRailScraper(origin_code, destination_code, total_departure_time, 1, 0)
+        scraper.set_single_ticket(total_departure_time)
+
+        scraper.launch_scraper()
+        scraper.clear_cookies_popup()
+        cheapest = scraper.get_cheapest_listed()
+        self.chatbot.send_bot_message(f"Cheapest ticket from {origin_name} to {destination_name} leaving after {total_departure_time.get_date()} at {total_departure_time.get_time()}:<br>⏰ Departure time: {cheapest['departure_time']}<br>⏰ Arrival time: {cheapest['arrival_time']}<br>⏰ Duration: {cheapest['length']}<br>💵 Price: {cheapest['price']}<br>🌐 Link: <a class='dark' target='_blank' href='{scraper.get_current_url()}'>click here</a>")
+

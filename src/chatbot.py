@@ -175,6 +175,30 @@ class Chatbot:
                 split.append(current)
         return split
     
+    def detect_date(self, text):
+        text_tokens = self.nlp(text)
+        detected_day, detected_month = None, None
+        detected_date = DateTime.find_valid_date(text)
+        if detected_date:
+            detected_day = int(detected_date.day)
+            detected_month = int(detected_date.month)
+
+        if detected_day == None or detected_month == None:
+            return None
+        return DateTime(day=detected_day, month=detected_month)
+
+    def detect_time(self, text):
+        text_tokens = self.nlp(text)
+        detected_hour, detected_min = None, None
+        detected_time = DateTime.find_valid_time(text)
+        if detected_time:
+            detected_min = int(detected_time.get_min())
+            detected_hour = int(detected_time.get_hour())
+
+        if detected_min == None or detected_hour == None:
+            return None
+        return DateTime(hour=detected_hour, minute=detected_min)
+    
     def detect_date_time(self, text):
         # returns one DateTime object for the detected date & time in the provided text
         # returns None if there is no date or time
@@ -203,7 +227,6 @@ class Chatbot:
             detected["ticket"] = detected_ticket
         
         detected_stations = self.detect_station_name(message)
-        
         if detected_stations:
             for station in detected_stations:
                 name, code, type = station
@@ -217,7 +240,15 @@ class Chatbot:
                         detected["origin_station"] = (name, code)
                     elif "name" not in self.destination_station_fact:
                         detected["destination_station"] = (name, code)
-                        
+
+        detected_time = self.detect_time(message)
+        if detected_time:
+            detected["time"] = detected_time
+        
+        detected_date = self.detect_date(message)
+        if detected_date:
+            detected["date"] = detected_date
+            
         return detected
 
     def send_bot_message(self, message):
