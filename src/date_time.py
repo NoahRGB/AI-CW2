@@ -103,14 +103,16 @@ class DateTime:
         # 2[0-3] means 2 followed by any digit 0-3
         # [0-5]\d means any digit 0-5 followed by any digit
         regex = r"([01]\d|2[0-3]|\d)[: \s]([0-5]\d)"
-        time_match = re.search(regex, text)
-        if time_match:
-            # format into a DateTime object
-            time = time_match.group()
+        found_times = []
+
+        for _, time in enumerate(re.finditer(regex, text)):       # format into a DateTime object
+            time = time.group()
+            original = time
             if ":" in time: time = time.replace(":", " ")
             time = time.split(" ")
-            return DateTime(hour=int(time[0]), minute=int(time[1]))
-        return None
+            found_times.append((DateTime(hour=int(time[0]), minute=int(time[1])), original))
+
+        return None if len(found_times) == 0 else found_times
     
     @staticmethod
     def find_valid_date(text):
@@ -121,9 +123,10 @@ class DateTime:
         day_pattern = r"(0\d|[12]\d|3[01]|\d)" # finds digits 00 - 31
 
         # finds a date in the format 'DD MONTH', 'MONTH DD', 'DD/MM', 'DD MM' and returns it as a DateTime object
-        date_match = re.search(fr"(({day_pattern}\s{text_month_pattern})|({text_month_pattern}\s{day_pattern}))|({day_pattern}[/ \s]{num_month_pattern})", text)
-        if date_match:
-            date = date_match.group()
+        found_dates = []
+        for _, date in enumerate(re.finditer(fr"(({day_pattern}\s{text_month_pattern})|({text_month_pattern}\s{day_pattern}))|({day_pattern}[/ \s]{num_month_pattern})", text)):
+            date = date.group()
+            original = date
             if any(month in date for month in DateTime.months):
                 month = re.search(fr"{text_month_pattern}", date).group()
                 day = int(re.search(fr"{day_pattern}", date).group())
@@ -132,5 +135,20 @@ class DateTime:
                 date = date.split(" ")
                 month = int(date[1])
                 day = int(date[0])
-            return DateTime(day=day, month=month)
-        return None
+            found_dates.append((DateTime(day=day, month=month), original))
+            
+        return None if len(found_dates) == 0 else found_dates
+            
+        # date_match = re.search(fr"(({day_pattern}\s{text_month_pattern})|({text_month_pattern}\s{day_pattern}))|({day_pattern}[/ \s]{num_month_pattern})", text)
+        # if date_match:
+        #     date = date_match.group()
+        #     if any(month in date for month in DateTime.months):
+        #         month = re.search(fr"{text_month_pattern}", date).group()
+        #         day = int(re.search(fr"{day_pattern}", date).group())
+        #     else:
+        #         if "/" in date: date = date.replace("/", " ")
+        #         date = date.split(" ")
+        #         month = int(date[1])
+        #         day = int(date[0])
+        #     return DateTime(day=day, month=month)
+        # return None

@@ -34,6 +34,10 @@ class Chatbot:
         DECLARING_DESTINATION_STATION=9,
         THANKS=10,
         EXIT=11,
+        DECLARING_DEPARTURE_TIME=12,
+        DECLARING_RETURN_TIME=13,
+        DECLARING_DEPARTURE_DATE=14,
+        DECLARING_RETURN_DATE=15
 
         @staticmethod
         def from_string(s): # turn string into an IntentionTypes enum
@@ -57,6 +61,14 @@ class Chatbot:
                 return Chatbot.IntentionTypes.THANKS
             elif s == "exit":
                 return Chatbot.IntentionTypes.EXIT
+            elif s == "declaring_departure_time":
+                return Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME
+            elif s == "declaring_return_time":
+                return Chatbot.IntentionTypes.DECLARING_RETURN_TIME
+            elif s == "declaring_departure_date":
+                return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
+            elif s == "declaring_return_date":
+                return Chatbot.IntentionTypes.DECLARING_RETURN_DATE
             else:
                 return Chatbot.IntentionTypes.UNSURE
 
@@ -146,14 +158,14 @@ class Chatbot:
         to_check = self.split_string(before_station_name)
         declarations_found = []
         for s in to_check:
-            for intention in self.intentions["declaring_stations"]:
-                matches = get_close_matches(s, self.intentions["declaring_stations"][intention]["patterns"])
+            for station_type in self.intentions["declaring_station_types"]:
+                matches = get_close_matches(s, self.intentions["declaring_station_types"][station_type]["patterns"])
                 if len(matches) > 0:
                     best_match = matches[0]
                     sm = SequenceMatcher(None, s, best_match)
                     score = sm.ratio()
                     if score >= 0.8:
-                        declarations_found.append(Chatbot.IntentionTypes.from_string(intention))
+                        declarations_found.append(Chatbot.IntentionTypes.from_string(station_type))
                 
                 
         return None if len(declarations_found) == 0 else declarations_found[len(declarations_found) - 1]
@@ -172,28 +184,95 @@ class Chatbot:
         return split
     
     def detect_date(self, text):
-        text_tokens = self.nlp(text)
-        detected_day, detected_month = None, None
-        detected_date = DateTime.find_valid_date(text)
-        if detected_date:
-            detected_day = int(detected_date.day)
-            detected_month = int(detected_date.month)
+        found_dates = []
+        detected_dates = DateTime.find_valid_date(text)
+        if detected_dates:
+            for detected_date in detected_dates:
+                detected_date, found_string = detected_date
+                found_dates.append((detected_date, self.find_date_type(text, found_string)))
+                print(found_dates[len(found_dates) - 1])
+        return None if len(found_dates) == 0 else found_dates
 
-        if detected_day == None or detected_month == None:
-            return None
-        return DateTime(day=detected_day, month=detected_month)
+        # detected_day, detected_month = None, None
+        # detected_date = DateTime.find_valid_date(text)
+        # if detected_date:
+        #     detected_day = int(detected_date.day)
+        #     detected_month = int(detected_date.month)
+
+        # if detected_day == None or detected_month == None:
+        #     return None
+        # return DateTime(day=detected_day, month=detected_month)
 
     def detect_time(self, text):
-        text_tokens = self.nlp(text)
-        detected_hour, detected_min = None, None
-        detected_time = DateTime.find_valid_time(text)
-        if detected_time:
-            detected_min = int(detected_time.get_min())
-            detected_hour = int(detected_time.get_hour())
+        found_times = []
+        detected_times = DateTime.find_valid_time(text)
+        if detected_times:
+            for detected_time in detected_times: 
+                detected_time, found_string = detected_time
+                found_times.append((detected_time, self.find_time_type(text, found_string)))
+                
+        return None if len(found_times) == 0 else found_times
 
-        if detected_min == None or detected_hour == None:
-            return None
-        return DateTime(hour=detected_hour, minute=detected_min)
+    def find_time_type(self, text, found_time):
+        if "type" in self.ticket_fact:
+            if self.ticket_fact["type"] == TicketTypes.SINGLE:
+                return Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME
+            elif self.ticket_fact["type"] == TicketTypes.RETURN:
+                split_time = found_time.split(" ")
+                before_time = text[:text.find(split_time[len(split_time) - 1])]
+                to_check = self.split_string(before_time)
+                found_matches = []
+                for s in to_check:
+                    for time_type in self.intentions["declaring_time_types"]:
+                        matches = get_close_matches(s, self.intentions["declaring_time_types"][time_type]["patterns"])
+                        if len(matches) > 0:
+                            best_match = matches[0]
+                            sm = SequenceMatcher(None, s, best_match)
+                            score = sm.ratio()
+                            if score >= 0.8:
+                                found_matches.append(Chatbot.IntentionTypes.from_string(time_type))
+                if len(found_matches) == 0:
+                    if self.departure_time_fact["pending"] == True:
+                        return Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME
+                    elif self.return_time_fact["pending"] == True:
+                        return Chatbot.IntentionTypes.DECLARING_RETURN_TIME
+                else:
+                    return found_matches[len(found_matches) - 1]
+            else:
+                return Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME
+        else:
+            return Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME
+        
+    def find_date_type(self, text, found_date):
+        if "type" in self.ticket_fact:
+            if self.ticket_fact["type"] == TicketTypes.SINGLE:
+                return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
+            elif self.ticket_fact["type"] == TicketTypes.RETURN:
+                split_date = found_date.split(" ")
+                before_date = text[:text.find(split_date[len(split_date) - 1])]
+                to_check = self.split_string(before_date)
+                found_matches = []
+                for s in to_check:
+                    for date_type in self.intentions["declaring_date_types"]:
+                        matches = get_close_matches(s, self.intentions["declaring_date_types"][date_type]["patterns"])
+                        if len(matches) > 0:
+                            best_match = matches[0]
+                            sm = SequenceMatcher(None, s, best_match)
+                            score = sm.ratio()
+                            if score >= 0.8:
+                                print(date_type, Chatbot.IntentionTypes.from_string(date_type))
+                                found_matches.append(Chatbot.IntentionTypes.from_string(date_type))
+                if len(found_matches) == 0:
+                    if self.departure_date_fact["pending"] == True:
+                        return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
+                    elif self.return_date_fact["pending"] == True:
+                        return Chatbot.IntentionTypes.DECLARING_RETURN_DATE
+                else:
+                    return found_matches[len(found_matches) - 1]
+            else:
+                return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
+        else:
+            return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
     
     def detect_adults(self, message):
         to_check = self.split_string(message)
@@ -266,14 +345,24 @@ class Chatbot:
                         detected["destination_station"] = (name, code)
 
         # find any times in message
-        detected_time = self.detect_time(message)
-        if detected_time:
-            detected["time"] = detected_time
+        detected_times = self.detect_time(message)
+        if detected_times:
+            for time in detected_times:
+                time, time_type = time
+                if time_type == Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME:
+                    detected["departure_time"] = time
+                elif time_type == Chatbot.IntentionTypes.DECLARING_RETURN_TIME:
+                    detected["return_time"] = time
         
         # find any dates in message
-        detected_date = self.detect_date(message)
-        if detected_date:
-            detected["date"] = detected_date
+        detected_dates = self.detect_date(message)
+        if detected_dates:
+            for date in detected_dates:
+                date, date_type = date
+                if date_type == Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE:
+                    detected["departure_date"] = date
+                elif date_type == Chatbot.IntentionTypes.DECLARING_RETURN_DATE:
+                    detected["return_date"] = date
             
         # find any adults in message
         detected_adults = self.detect_adults(message);

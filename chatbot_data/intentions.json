@@ -58,7 +58,7 @@
         },
         "confirm": {
             "patterns": [
-                "yes", "correct", "that's right", "yep", "ok", "yeah", "true", "alright", "good", "uh huh"
+                "yes", "correct", "that's right", "yep", "ok", "yeah", "true", "alright", "good", "uh huh", "confirm", "yes please", "i confirm", "confirm please"
             ]
         },
         "thanks": {
@@ -72,7 +72,7 @@
         }
     },
     
-    "declaring_stations": {
+    "declaring_station_types": {
         "declaring_origin_station": {
             "patterns": [
                 "from", "leaving from", "departing", "departing from", "travel from", "travelling from", "ticket from"
@@ -81,6 +81,32 @@
         "declaring_destination_station": {
             "patterns": [
                 "to", "going to", "arriving", "arriving at", "go to", "ticket to"
+            ]
+        }
+    },
+
+    "declaring_time_types": {
+        "declaring_departure_time": {
+            "patterns": [
+                "leaving at", "departing at", "leaving"
+            ]
+        },
+        "declaring_return_time": {
+            "patterns": [
+                "returning", "returning at", "coming back", "coming back at"
+            ]
+        }
+    },
+
+    "declaring_date_types": {
+        "declaring_departure_date": {
+            "patterns": [
+                "leaving at", "departing at", "leaving", "leaving on"
+            ]
+        },
+        "declaring_return_date": {
+            "patterns": [
+                "returning", "returning at", "coming back", "coming back at", "returning on"
             ]
         }
     },

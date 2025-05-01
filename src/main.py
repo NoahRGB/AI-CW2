@@ -27,13 +27,21 @@ def declare_all_information(user_input):
     if chatbot.destination_station_fact["pending"] == True:
       chatbot.destination_station_fact = chatbot_engine.modify(chatbot.destination_station_fact, name=station, code=code)
 
-  if "time" in information:
+  if "departure_time" in information:
     if chatbot.departure_time_fact["pending"] == True:
-      chatbot.departure_time_fact = chatbot_engine.modify(chatbot.departure_time_fact, time=information["time"])
+      chatbot.departure_time_fact = chatbot_engine.modify(chatbot.departure_time_fact, time=information["departure_time"])
 
-  if "date" in information:
+  if "departure_date" in information:
     if chatbot.departure_date_fact["pending"] == True:
-      chatbot.departure_date_fact = chatbot_engine.modify(chatbot.departure_date_fact, date=information["date"])
+      chatbot.departure_date_fact = chatbot_engine.modify(chatbot.departure_date_fact, date=information["departure_date"])
+  
+  if "return_time" in information:
+    if chatbot.return_time_fact["pending"] == True:
+      chatbot.return_time_fact = chatbot_engine.modify(chatbot.return_time_fact, time=information["return_time"])
+
+  if "return_date" in information:
+    if chatbot.return_date_fact["pending"] == True:
+      chatbot.return_date_fact = chatbot_engine.modify(chatbot.return_date_fact, date=information["return_date"])
       
   if "adults" in information:
     chatbot.adult_tickets_fact = chatbot_engine.modify(chatbot.adult_tickets_fact, count=information["adults"], pending=True)
@@ -63,10 +71,11 @@ def get_chatbot_message():
     chatbot.departure_date_fact = chatbot_engine.declare(DepartureDate(pending=True))
     chatbot.adult_tickets_fact = chatbot_engine.declare(AdultTickets(count=1, pending=False))
     chatbot.child_tickets_fact = chatbot_engine.declare(ChildTickets(count=0, pending=False))
+    chatbot.return_time_fact = chatbot_engine.declare(ReturnTime(pending=True))
+    chatbot.return_date_fact = chatbot_engine.declare(ReturnDate(pending=True))
     
   else: # otherwise, use the user's message
     chatbot.find_user_intention(user_input)
-    print(f"Changing intention to {chatbot.last_intention}")
     chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=chatbot.last_intention)
     chatbot.last_message = user_input
   
