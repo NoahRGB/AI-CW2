@@ -15,6 +15,7 @@ def declare_all_information(user_input):
   
   if "ticket" in information:
     if "type" not in chatbot.ticket_fact or chatbot.ticket_fact["pending"] == True:
+      print(f"Updating ticket fact with {information['ticket']}")
       chatbot.ticket_fact = chatbot_engine.modify(chatbot.ticket_fact, type=information["ticket"])
 
   if "origin_station" in information:

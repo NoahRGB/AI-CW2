@@ -105,7 +105,7 @@ class DateTime:
         regex = r"([01]\d|2[0-3]|\d)[: \s]([0-5]\d)"
         found_times = []
 
-        for _, time in enumerate(re.finditer(regex, text)):       # format into a DateTime object
+        for _, time in enumerate(re.finditer(regex, text)):
             time = time.group()
             original = time
             if ":" in time: time = time.replace(":", " ")
@@ -138,17 +138,3 @@ class DateTime:
             found_dates.append((DateTime(day=day, month=month), original))
             
         return None if len(found_dates) == 0 else found_dates
-            
-        # date_match = re.search(fr"(({day_pattern}\s{text_month_pattern})|({text_month_pattern}\s{day_pattern}))|({day_pattern}[/ \s]{num_month_pattern})", text)
-        # if date_match:
-        #     date = date_match.group()
-        #     if any(month in date for month in DateTime.months):
-        #         month = re.search(fr"{text_month_pattern}", date).group()
-        #         day = int(re.search(fr"{day_pattern}", date).group())
-        #     else:
-        #         if "/" in date: date = date.replace("/", " ")
-        #         date = date.split(" ")
-        #         month = int(date[1])
-        #         day = int(date[0])
-        #     return DateTime(day=day, month=month)
-        # return None

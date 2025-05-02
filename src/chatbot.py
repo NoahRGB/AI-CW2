@@ -37,7 +37,8 @@ class Chatbot:
         DECLARING_DEPARTURE_TIME=12,
         DECLARING_RETURN_TIME=13,
         DECLARING_DEPARTURE_DATE=14,
-        DECLARING_RETURN_DATE=15
+        DECLARING_RETURN_DATE=15,
+        DENY=16,
 
         @staticmethod
         def from_string(s): # turn string into an IntentionTypes enum
@@ -69,6 +70,8 @@ class Chatbot:
                 return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
             elif s == "declaring_return_date":
                 return Chatbot.IntentionTypes.DECLARING_RETURN_DATE
+            elif s == "deny":
+                return Chatbot.IntentionTypes.DENY
             else:
                 return Chatbot.IntentionTypes.UNSURE
 
@@ -99,15 +102,21 @@ class Chatbot:
     
     def find_user_intention(self, user_input, min_similarity=0.7):
         # find what kind of message the user sent using Chatbot.IntentionTypes
-        user_input = self.clean_text(user_input.lower())
-        user_input_tokens = self.nlp(user_input)
+        user_input = user_input.lower()
+        cleaned_input = self.clean_text(user_input)
 
         for intention in self.intentions["intentions"]:
             for pattern in self.intentions["intentions"][intention]["patterns"]:
-                sm = SequenceMatcher(None, user_input, pattern).ratio()
+                sm = SequenceMatcher(None, cleaned_input, pattern).ratio()
                 if sm > min_similarity:
                     self.last_intention = Chatbot.IntentionTypes.from_string(intention)
                     return self.last_intention
+                
+                sm = SequenceMatcher(None, user_input, pattern).ratio()
+                if sm == 1.0:
+                    self.last_intention = Chatbot.IntentionTypes.from_string(intention)
+                    return self.last_intention
+            
                     
         self.last_intention = Chatbot.IntentionTypes.UNSURE
         return self.last_intention
@@ -174,6 +183,7 @@ class Chatbot:
         # turns a string into every possible combination 
         # of words e.g. "i want a ticket" turns into
         # ["i", "i want", "i want a", "i want a ticket", ...]
+        s = s.lower()
         split = [s]
         s = s.split(" ")
         for i in range(0, len(s)):
@@ -192,16 +202,6 @@ class Chatbot:
                 found_dates.append((detected_date, self.find_date_type(text, found_string)))
                 print(found_dates[len(found_dates) - 1])
         return None if len(found_dates) == 0 else found_dates
-
-        # detected_day, detected_month = None, None
-        # detected_date = DateTime.find_valid_date(text)
-        # if detected_date:
-        #     detected_day = int(detected_date.day)
-        #     detected_month = int(detected_date.month)
-
-        # if detected_day == None or detected_month == None:
-        #     return None
-        # return DateTime(day=detected_day, month=detected_month)
 
     def detect_time(self, text):
         found_times = []
@@ -305,8 +305,7 @@ class Chatbot:
         return None
     
     def find_closest_number(self, text, word):
-        split_text = text.split(" ")
-        print(f"{split_text}, {word}")
+        split_text = text.lower().split(" ")
         index = split_text.index(word)
         before, after = None, None
         if index != 0:

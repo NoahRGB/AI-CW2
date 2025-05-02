@@ -21,7 +21,6 @@ class ChatbotEngine(KnowledgeEngine):
     def clear_chatbot_intention(self):
         self.chatbot.last_intention = Chatbot.IntentionTypes.NONE
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=self.chatbot.last_intention)
-        print(f"\n cleared intentions\n{self.facts}\n")
         
     def find_next_station_type(self):
         declaring_stations = self.chatbot.detect_declaring_station(self.chatbot.last_message)
@@ -71,20 +70,25 @@ class ChatbotEngine(KnowledgeEngine):
     @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) & Ticket(type=MATCH.ticket_type, pending=True))
     def prompt_ticket_confirmation(self, ticket_type):
         self.chatbot.send_bot_message(f"Are you sure you want a {ticket_type} ticket?")
-        print(f"From ticket prompt confirmation:\n{self.facts}\n")
         
     @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & Ticket(type=MATCH.ticket_type, pending=True))
     def confirm_pending_ticket(self, ticket_type):
         self.chatbot.ticket_fact = self.modify(self.chatbot.ticket_fact, pending=False)
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
-        print(f"From ticket confirmation:\n{self.facts}\n")
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & Ticket(type=MATCH.ticket_type, pending=True))
+    def deny_pending_ticket(self, ticket_type):
+        self.retract(self.chatbot.ticket_fact)
+        self.chatbot.ticket_fact = self.declare(Ticket(pending=True))
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        print(f"\nFacts after denying ticket:\n{self.facts}\n")
     
     @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & ~Ticket(pending=False) & ~Ticket(type=W(), pending=True))
     def select_ticket(self):
         self.chatbot.send_bot_message("What type of ticket do you need? (single, return)")
     
     # ====== INPUTTING AN ORIGIN STATION ======
-    
+
     @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) 
           & OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=True))
     def prompt_origin_station_confirmation(self, origin_name, origin_code):
@@ -94,6 +98,13 @@ class ChatbotEngine(KnowledgeEngine):
           & ~Ticket(type=MATCH.ticket_type, pending=True))
     def confirm_pending_origin_station(self):
         self.chatbot.origin_station_fact = self.modify(self.chatbot.origin_station_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & OriginStation(name=W(), code=W(), pending=True)
+          & ~Ticket(type=MATCH.ticket_type, pending=True))
+    def deny_pending_origin_station(self):
+        self.retract(self.chatbot.origin_station_fact)
+        self.chatbot.origin_station_fact = self.declare(OriginStation(pending=True))
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
         
     @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False) 
@@ -112,6 +123,13 @@ class ChatbotEngine(KnowledgeEngine):
           & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True))
     def confirm_pending_destination_station(self):
         self.chatbot.destination_station_fact = self.modify(self.chatbot.destination_station_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & DestinationStation(name=W(), code=W(), pending=True)
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True))
+    def deny_pending_destination_station(self):
+        self.retract(self.chatbot.destination_station_fact)
+        self.chatbot.destination_station_fact = self.declare(DestinationStation(pending=True))
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
         
     @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False) 
@@ -133,12 +151,20 @@ class ChatbotEngine(KnowledgeEngine):
         self.chatbot.departure_time_fact = self.modify(self.chatbot.departure_time_fact, pending=False)
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
         
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & DepartureTime(time=W(), pending=True)
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True))
+    def deny_pending_departure_time(self):
+        self.retract(self.chatbot.departure_time_fact)
+        self.chatbot.departure_time_fact = self.declare(DepartureTime(pending=True))
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
     @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False)
           & OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=False)
           & DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=False)
           & ~DepartureTime(pending=False))
     def select_departure_time(self, ticket_type, origin_name, origin_code, destination_name, destination_code):
-        self.chatbot.send_bot_message(f"What time do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
+        self.chatbot.send_bot_message(f"What time (24hr) do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
         
     # ====== INPUTTING A DEPARTURE DATE ======
     
@@ -153,13 +179,21 @@ class ChatbotEngine(KnowledgeEngine):
     def confirm_pending_departure_date(self):
         self.chatbot.departure_date_fact = self.modify(self.chatbot.departure_date_fact, pending=False)
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & DepartureDate(date=W(), pending=True)
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True) & ~DepartureTime(time=W(), pending=True))
+    def deny_pending_departure_date(self):
+        self.retract(self.chatbot.departure_date_fact)
+        self.chatbot.departure_date_fact = self.declare(DepartureDate(pending=True))
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
 
     @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH) & Ticket(type=MATCH.ticket_type, pending=False)
           & OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=False)
           & DestinationStation(name=MATCH.destination_name, code=MATCH.destination_code, pending=False)
           & ~DepartureDate(pending=False))
     def select_departure_date(self, ticket_type, origin_name, origin_code, destination_name, destination_code):
-        self.chatbot.send_bot_message(f"When do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
+        self.chatbot.send_bot_message(f"What date do you want to leave {origin_name} ({origin_code}) to get to {destination_name} ({destination_code})?")
         
     # ====== INPUTTING RETURN TIME ======
 
@@ -175,6 +209,15 @@ class ChatbotEngine(KnowledgeEngine):
     def confirm_pending_return_time(self):
         self.chatbot.return_time_fact = self.modify(self.chatbot.return_time_fact, pending=False)
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & ReturnTime(time=W(), pending=True)
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True) & ~DepartureTime(time=W(), pending=True)
+          & ~DepartureDate(date=W(), pending=True))
+    def deny_pending_return_time(self):
+        self.retract(self.chatbot.return_time_fact)
+        self.chatbot.return_time_fact = self.declare(ReturnTime(pending=True))
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
 
     @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
           & Ticket(type=TicketTypes.RETURN, pending=False)
@@ -183,7 +226,7 @@ class ChatbotEngine(KnowledgeEngine):
           & ~ReturnTime(pending=False)
           & DepartureDate(pending=False) & DepartureTime(pending=False))
     def select_return_time(self, origin_name, origin_code, destination_name, destination_code):
-        self.chatbot.send_bot_message(f"What time do you want to return to {origin_name} ({origin_code}) from {destination_name} ({destination_code})?")
+        self.chatbot.send_bot_message(f"What time (24hr) do you want to return to {origin_name} ({origin_code}) from {destination_name} ({destination_code})?")
 
     # ====== INPUTTING RETURN DATE ======
 
@@ -199,6 +242,15 @@ class ChatbotEngine(KnowledgeEngine):
     def confirm_pending_return_date(self):
         self.chatbot.return_date_fact = self.modify(self.chatbot.return_date_fact, pending=False)
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+                 
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & ReturnDate(date=W(), pending=True)
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True) & ~DepartureTime(time=W(), pending=True)
+          & ~DepartureDate(date=W(), pending=True) & ~ReturnTime(time=W(), pending=True))
+    def deny_pending_return_date(self):
+        self.retract(self.chatbot.return_date_fact)
+        self.chatbot.return_date_fact = self.declare(ReturnDate(pending=True))
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
 
     @Rule(Intention(type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
           & Ticket(type=TicketTypes.RETURN, pending=False)
@@ -207,7 +259,7 @@ class ChatbotEngine(KnowledgeEngine):
           & ~ReturnDate(pending=False)
           & DepartureDate(pending=False) & DepartureTime(pending=False))
     def select_return_date(self, origin_name, origin_code, destination_name, destination_code):
-        self.chatbot.send_bot_message(f"When do you want to return to {origin_name} ({origin_code}) from {destination_name} ({destination_code})?")
+        self.chatbot.send_bot_message(f"What date do you want to return to {origin_name} ({origin_code}) from {destination_name} ({destination_code})?")
 
     # ====== INPUTTING ADULT TICKETS ======
         
@@ -223,6 +275,15 @@ class ChatbotEngine(KnowledgeEngine):
     def confirm_pending_adult_tickets(self):
         self.chatbot.adult_tickets_fact = self.modify(self.chatbot.adult_tickets_fact, pending=False)
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+        
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & AdultTickets(count=W(), pending=True)
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True) & ~DepartureTime(time=W(), pending=True)
+          & ~DepartureDate(date=W(), pending=True))
+    def deny_pending_adult_tickets(self):
+        self.retract(self.chatbot.adult_tickets_fact)
+        self.chatbot.adult_tickets_fact = self.declare(AdultTickets(count=1, pending=True))
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
     
     # ====== INPUTTING CHILD TICKETS ======
         
@@ -237,6 +298,15 @@ class ChatbotEngine(KnowledgeEngine):
           & ~DepartureDate(date=W(), pending=True) & ~AdultTickets(count=W(), pending=True))
     def confirm_pending_child_tickets(self):
         self.chatbot.child_tickets_fact = self.modify(self.chatbot.child_tickets_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
+          
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY) & ChildTickets(count=W(), pending=True)
+          & ~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=W(), code=W(), pending=True)
+          & ~DestinationStation(name=W(), code=W(), pending=True) & ~DepartureTime(time=W(), pending=True)
+          & ~DepartureDate(date=W(), pending=True) & ~AdultTickets(count=W(), pending=True))
+    def deny_pending_child_tickets(self):
+        self.retract(self.chatbot.child_tickets_fact)
+        self.chatbot.child_tickets_fact = self.declare(ChildTickets(count=0, pending=True))
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.TICKET_WALKTHROUGH)
         
     # ====== FINDING CHEAPEST TICKET ======

@@ -1,4 +1,5 @@
 from experta import *
+
 class Intention(Fact):
     pass
 class Ticket(Fact):
@@ -7,10 +8,8 @@ class OriginStation(Fact):
     pass
 class DestinationStation(Fact):
     pass
-
 class DepartureTime(Fact):
     pass
-
 class DepartureDate(Fact):
     pass
 class ReturnTime(Fact):
