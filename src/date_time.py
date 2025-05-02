@@ -118,9 +118,10 @@ class DateTime:
     def find_valid_date(text):
         # searches for any valid dates in the provided string
         
+        day_suffix_pattern = r"((th)?|(st)?|(nd)?|(rd)?)"
         text_month_pattern = f"({'|'.join(DateTime.months)})" # finds month strings based on DateTime.months
         num_month_pattern = r"(0\d|1[012]|[1-9])" # finds digits 00 - 12
-        day_pattern = r"(0\d|[12]\d|3[01]|\d)" # finds digits 00 - 31
+        day_pattern = fr"(0\d{day_suffix_pattern}|[12]\d{day_suffix_pattern}|3[01]{day_suffix_pattern}|\d{day_suffix_pattern})" # finds digits 00 - 31
 
         # finds a date in the format 'DD MONTH', 'MONTH DD', 'DD/MM', 'DD MM' and returns it as a DateTime object
         found_dates = []
@@ -129,7 +130,7 @@ class DateTime:
             original = date
             if any(month in date for month in DateTime.months):
                 month = re.search(fr"{text_month_pattern}", date).group()
-                day = int(re.search(fr"{day_pattern}", date).group())
+                day = int(re.search(fr"{day_pattern}", date).group().replace("th", "").replace("st", "").replace("nd", "").replace("rd", ""))
             else:
                 if "/" in date: date = date.replace("/", " ")
                 date = date.split(" ")

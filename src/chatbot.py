@@ -41,7 +41,7 @@ class Chatbot:
         DENY=16,
 
         @staticmethod
-        def from_string(s): # turn string into an IntentionTypes enum
+        def from_string(s): # turn string into an Chatbot.IntentionTypes enum value
             if s == "greeting":
                 return Chatbot.IntentionTypes.GREETING
             elif s == "task1":
@@ -163,6 +163,8 @@ class Chatbot:
         return None if len(detected_stations) == 0 else detected_stations
     
     def find_station_type(self, user_input, station_name):
+        # finds the type of station that station_name is inside of user_input
+        # e.g. is it a origin station or a destination station
         before_station_name = user_input[:user_input.find(station_name)]
         to_check = self.split_string(before_station_name)
         declarations_found = []
@@ -182,7 +184,7 @@ class Chatbot:
     def split_string(self, s):
         # turns a string into every possible combination 
         # of words e.g. "i want a ticket" turns into
-        # ["i", "i want", "i want a", "i want a ticket", ...]
+        # ["i", "i want", "i want a", "i want a ticket", "want", "want a", "want a ticket", "a", ...]
         s = s.lower()
         split = [s]
         s = s.split(" ")
@@ -194,6 +196,9 @@ class Chatbot:
         return split
     
     def detect_date(self, text):
+        # finds any valid dates inside of text and returns a list of them
+        # along with their type using chatbot.find_date_type
+        
         found_dates = []
         detected_dates = DateTime.find_valid_date(text)
         if detected_dates:
@@ -204,6 +209,9 @@ class Chatbot:
         return None if len(found_dates) == 0 else found_dates
 
     def detect_time(self, text):
+        # finds any valid times inside of text and returns a list of them
+        # along with their type using chatbot.find_time_type
+        
         found_times = []
         detected_times = DateTime.find_valid_time(text)
         if detected_times:
@@ -214,6 +222,9 @@ class Chatbot:
         return None if len(found_times) == 0 else found_times
 
     def find_time_type(self, text, found_time):
+        # returns what kind of time the found_time inside of text is
+        # e.g. is it a departure time or a return time
+        
         if "type" in self.ticket_fact:
             if self.ticket_fact["type"] == TicketTypes.SINGLE:
                 return Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME
@@ -244,6 +255,9 @@ class Chatbot:
             return Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME
         
     def find_date_type(self, text, found_date):
+        # returns what kind of date the found_date inside of text is
+        # e.g. is it a departure date or a return date
+        
         if "type" in self.ticket_fact:
             if self.ticket_fact["type"] == TicketTypes.SINGLE:
                 return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
@@ -275,6 +289,7 @@ class Chatbot:
             return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
     
     def detect_adults(self, message):
+        # returns the number of any adult tickets given in the message
         to_check = self.split_string(message)
         
         for text in to_check:
@@ -290,6 +305,7 @@ class Chatbot:
         return None
     
     def detect_children(self, message):
+        # returns the number of any child tickets given in the message
         to_check = self.split_string(message)
         
         for text in to_check:
@@ -305,6 +321,8 @@ class Chatbot:
         return None
     
     def find_closest_number(self, text, word):
+        # will find the closest valid number to the string word in the string text
+        # e.g. '4 adult tickets' returns 4
         split_text = text.lower().split(" ")
         index = split_text.index(word)
         before, after = None, None
@@ -320,6 +338,9 @@ class Chatbot:
         return None
     
     def detect_all_information(self, message):
+        # finds any train stations, times, dates and adult/child tickets
+        # that are in the given message and returns them in a dictionary
+        
         detected = {}
         
         # find any ticket types in message
@@ -378,4 +399,4 @@ class Chatbot:
 
     def send_bot_message(self, message):
         print(f"\n{message}\n")
-        self.last_chatbot_message = message
+        self.last_chatbot_message = message # this is picked up by main.py and sent to the website
