@@ -53,6 +53,23 @@ def declare_all_information(user_input):
   if "children" in information:
     chatbot.child_tickets_fact = chatbot_engine.modify(chatbot.child_tickets_fact, count=information["children"], pending=True)
 
+  if "current_station" in information:
+    station, code = information["current_station"]
+    if chatbot.current_station_fact["pending"] == True:
+      chatbot.current_station_fact = chatbot_engine.modify(chatbot.current_station_fact, name=station, code=code, pending=True)
+
+  if "current_time" in information:
+    if chatbot.current_time_fact["pending"] == True:
+      chatbot.current_time_fact = chatbot_engine.modify(chatbot.current_time_fact, time=information["current_time"], pending=True)
+
+  if "current_delay" in information:
+    if chatbot.current_delay_fact["pending"] == True:
+      chatbot.current_delay_fact = chatbot_engine.modify(chatbot.current_delay_fact, amount=information["current_delay"], pending=True)
+
+  if "direction" in information:
+    if chatbot.direction_fact["pending"] == True:
+      chatbot.direction_fact = chatbot_engine.modify(chatbot.direction_fact, to_nrw=information["direction"], pending=True)
+
 # route to render the homepage
 @app.route("/")
 def home():
@@ -70,6 +87,8 @@ def get_chatbot_message():
     
     # initialise all the facts for the KnowledgeEngine
     chatbot.last_intention_fact = chatbot_engine.modify(chatbot_engine.facts[1], type=chatbot.last_intention)
+    
+    # facts for part 1 (cheapest ticket)
     chatbot.ticket_fact = chatbot_engine.declare(Ticket(pending=True))
     chatbot.origin_station_fact = chatbot_engine.declare(OriginStation(pending=True))
     chatbot.destination_station_fact = chatbot_engine.declare(DestinationStation(pending=True))
@@ -80,6 +99,12 @@ def get_chatbot_message():
     chatbot.return_time_fact = chatbot_engine.declare(ReturnTime(pending=True))
     chatbot.return_date_fact = chatbot_engine.declare(ReturnDate(pending=True))
     
+    # facts for part 2 (delay prediction)
+    chatbot.current_station_fact = chatbot_engine.declare(CurrentStation(pending=True))
+    chatbot.current_time_fact = chatbot_engine.declare(CurrentTime(pending=True))
+    chatbot.current_delay_fact = chatbot_engine.declare(CurrentDelay(pending=True))
+    chatbot.direction_fact = chatbot_engine.declare(Direction(pending=True))
+
   else: # otherwise, use the user's message
     chatbot.find_user_intention(user_input)
     chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=chatbot.last_intention)

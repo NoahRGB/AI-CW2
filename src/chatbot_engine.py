@@ -344,3 +344,13 @@ class ChatbotEngine(KnowledgeEngine):
         cheapest = scraper.get_cheapest_listed()
         self.chatbot.send_bot_message(f"Cheapest ticket from {origin_name} to {destination_name} leaving after {total_departure_time.get_date()} at {total_departure_time.get_time()} ({adult_count} adults and {child_count} children):<br>⏰ Departure time: {cheapest['departure_time']}<br>⏰ Arrival time: {cheapest['arrival_time']}<br>⏰ Duration: {cheapest['length']}<br>💵 Price: {cheapest['price']}<br>🌐 Link: <a class='dark' target='_blank' href='{scraper.get_current_url()}'>click here</a>")
 
+    # ====== DELAY PREDICTION ======
+
+    # @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)
+    #           & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True)))
+    # def prompt_current_station_confirmation(self, current_station_name, current_station_code):
+    #     self.chatbot.send_bot_message(f"Confirm current station {current_station_name} ({current_station_code})?")
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) & ~CurrentStation(pending=False))
+    def select_current_station(self):
+        self.chatbot.send_bot_message(f"I can help to predict delays along the Norwich -> London Liverpool Street line<br>What station are you currently at?")

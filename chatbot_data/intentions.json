@@ -37,6 +37,27 @@
                 "train journey"
             ]
         },
+        "task2": {
+            "patterns": [
+                "task 2",
+                "do task 2",
+                "predict delays",
+                "delays",
+                "predict delays on my journey",
+                "predict delays to london",
+                "predict delays to london liverpool street",
+                "predict delays to norwich",
+                "i want to predict delays to london",
+                "i want to predict delays to norwich",
+                "what will my delay be?",
+                "delay finder",
+                "delay calculator",
+                "can you predict delays?",
+                "can you calculate what my delay will be",
+                "can you find how long my train will be delayed?",
+                "how long will my train be delayed?"
+            ]
+        },
         "cancel": {
             "patterns": [
                 "go back", "exit", "cancel", "undo"
@@ -126,6 +147,12 @@
     "children": {
         "patterns": [
             "children", "child", "baby"
+        ]
+    },
+
+    "delays": {
+        "patterns": [
+            "delays", "delay", "late", "lateness", "find delays", "find delay", "get delay"
         ]
     }
 }

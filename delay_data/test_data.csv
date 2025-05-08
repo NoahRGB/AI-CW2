@@ -1,0 +1,3 @@
+rid,date_of_service,location,planned_arrival_time,planned_departure_time,actual_arrival_time,actual_departure_time,late_canc_reason
+202201017036043,2022-01-01,CHM,07:57,07:58,07:54,07:57,
+202201017036043,2022-01-01,COL,08:16,08:17,08:14,08:16,

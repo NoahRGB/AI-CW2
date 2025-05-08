@@ -39,6 +39,7 @@ class Chatbot:
         DECLARING_DEPARTURE_DATE=14,
         DECLARING_RETURN_DATE=15,
         DENY=16,
+        DELAY_WALKTHROUGH=17
 
         @staticmethod
         def from_string(s): # turn string into an Chatbot.IntentionTypes enum value
@@ -72,6 +73,8 @@ class Chatbot:
                 return Chatbot.IntentionTypes.DECLARING_RETURN_DATE
             elif s == "deny":
                 return Chatbot.IntentionTypes.DENY
+            elif s == "task2":
+                return Chatbot.IntentionTypes.DELAY_WALKTHROUGH
             else:
                 return Chatbot.IntentionTypes.UNSURE
 
