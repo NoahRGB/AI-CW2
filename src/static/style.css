@@ -32,6 +32,7 @@ a.dark {
   flex: 0 1 auto;
   height: 100%;
   overflow: auto;
+  /* overflow-x: hidden; */
 }
 
 .align-right {
@@ -82,6 +83,7 @@ a.dark {
   max-width: 80%;
   padding: 1% 1% 1% 1%;
   border-radius: 10px;
+  overflow-x: hidden;
 }
 
 .chatbot-message {
@@ -96,4 +98,8 @@ a.dark {
   margin: 0 10% 0 auto;
   width: fit-content;
   background-color: #d1d1d1;
+}
+
+.img {
+  width: 20px;
 }

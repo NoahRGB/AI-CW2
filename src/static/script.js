@@ -1,8 +1,17 @@
-
+x
 let isChatbotTurn = false;
 let isFirstMessage = true;
 let inputBox = document.getElementById("input-box");
 let chatbox = document.getElementById("chatbox");
+let loader = document.getElementById("loader");
+
+const turnOnLoader = () => {
+  chatbox.appendChild(loader);
+}
+
+const turnOffLoader = () => {
+  loader.remove();
+}
 
 const addToChatbox = (message, isUser) => {
   if (isUser) {
@@ -15,6 +24,7 @@ const addToChatbox = (message, isUser) => {
 
 const getChatbotMessage = userInput => {
   $.post("/get_chatbot_message", { user_input: userInput, is_first_message: isFirstMessage }, chatbot_message => {
+    turnOffLoader();
     console.log("Message: " + chatbot_message)
     isChatbotTurn = false;
     addToChatbox(chatbot_message, false);
@@ -26,6 +36,7 @@ const sendMessage = () => {
   if (isFirstMessage | userMessage != "") {
     !isFirstMessage && addToChatbox(userMessage, true)
     isChatbotTurn = true;
+    turnOnLoader();
     getChatbotMessage(userMessage);
     inputBox.value = ""
   } else {

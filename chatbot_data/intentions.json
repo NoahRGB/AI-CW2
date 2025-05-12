@@ -55,7 +55,8 @@
                 "can you predict delays?",
                 "can you calculate what my delay will be",
                 "can you find how long my train will be delayed?",
-                "how long will my train be delayed?"
+                "how long will my train be delayed?",
+                "delay prediction"
             ]
         },
         "cancel": {

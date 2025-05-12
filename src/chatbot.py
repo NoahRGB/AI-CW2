@@ -39,7 +39,8 @@ class Chatbot:
         DECLARING_DEPARTURE_DATE=14,
         DECLARING_RETURN_DATE=15,
         DENY=16,
-        DELAY_WALKTHROUGH=17
+        DELAY_WALKTHROUGH=17,
+        DECLARING_DELAY=18
 
         @staticmethod
         def from_string(s): # turn string into an Chatbot.IntentionTypes enum value
@@ -75,6 +76,8 @@ class Chatbot:
                 return Chatbot.IntentionTypes.DENY
             elif s == "task2":
                 return Chatbot.IntentionTypes.DELAY_WALKTHROUGH
+            elif s == "declaring_delay":
+                return Chatbot.IntentionTypes.DECLARING_DELAY
             else:
                 return Chatbot.IntentionTypes.UNSURE
 
@@ -85,6 +88,8 @@ class Chatbot:
         self.last_intention = None # stores the most recent intention
         self.last_intention_fact = None # stores the most recent Experta intention fact
         self.last_chatbot_message = None # stores the most recent chatbot message
+
+        self.doing_task_1 = True
 
         # load list of UK train stations from generate_stations.py
         with open("../chatbot_data/station_list.pickle", "rb") as f:
@@ -323,6 +328,13 @@ class Chatbot:
                         return children_count
         return None
     
+    def detect_delay_minutes(self, message):
+        split_message = message.split(" ")
+        for word in split_message:
+            if word.isnumeric():
+                return int(word)
+        return None
+    
     def find_closest_number(self, text, word):
         # will find the closest valid number to the string word in the string text
         # e.g. '4 adult tickets' returns 4
@@ -356,26 +368,33 @@ class Chatbot:
         if detected_stations:
             for station in detected_stations:
                 name, code, type = station
-                if type:
-                    if type == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
-                        detected["origin_station"] = (name, code)
-                    elif type == Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION:
-                        detected["destination_station"] = (name, code)
+
+                if not self.doing_task_1 == Chatbot.IntentionTypes.DELAY_WALKTHROUGH:
+                    detected["current_station"] = (name, code)
                 else:
-                    if "name" not in self.origin_station_fact:
-                        detected["origin_station"] = (name, code)
-                    elif "name" not in self.destination_station_fact:
-                        detected["destination_station"] = (name, code)
+                    if type:
+                        if type == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
+                            detected["origin_station"] = (name, code)
+                        elif type == Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION:
+                            detected["destination_station"] = (name, code)
+                    else:
+                        if "name" not in self.origin_station_fact:
+                            detected["origin_station"] = (name, code)
+                        elif "name" not in self.destination_station_fact:
+                            detected["destination_station"] = (name, code)
 
         # find any times in message
         detected_times = self.detect_time(message)
         if detected_times:
             for time in detected_times:
                 time, time_type = time
-                if time_type == Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME:
-                    detected["departure_time"] = time
-                elif time_type == Chatbot.IntentionTypes.DECLARING_RETURN_TIME:
-                    detected["return_time"] = time
+                if not self.doing_task_1 == Chatbot.IntentionTypes.DELAY_WALKTHROUGH:
+                    detected["current_time"] = time
+                else:
+                    if time_type == Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME:
+                        detected["departure_time"] = time
+                    elif time_type == Chatbot.IntentionTypes.DECLARING_RETURN_TIME:
+                        detected["return_time"] = time
         
         # find any dates in message
         detected_dates = self.detect_date(message)
@@ -396,6 +415,12 @@ class Chatbot:
         detected_children = self.detect_children(message);
         if detected_children:
             detected["children"] = detected_children
+
+        # find delay in message
+        if self.last_intention_fact["type"] == Chatbot.IntentionTypes.DECLARING_DELAY:
+            delay_minutes = self.detect_delay_minutes(message)
+            if delay_minutes:
+                detected["current_delay"] = delay_minutes
             
         # return everything that was found
         return detected

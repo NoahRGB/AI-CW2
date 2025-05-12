@@ -18,7 +18,6 @@ def declare_all_information(user_input):
   
   if "ticket" in information:
     if "type" not in chatbot.ticket_fact or chatbot.ticket_fact["pending"] == True:
-      print(f"Updating ticket fact with {information['ticket']}")
       chatbot.ticket_fact = chatbot_engine.modify(chatbot.ticket_fact, type=information["ticket"])
 
   if "origin_station" in information:
@@ -106,12 +105,20 @@ def get_chatbot_message():
     chatbot.direction_fact = chatbot_engine.declare(Direction(pending=True))
 
   else: # otherwise, use the user's message
+    # find all the information that was in the user's message
+    declare_all_information(user_input)
+    
     chatbot.find_user_intention(user_input)
+
+    if chatbot.last_intention == Chatbot.IntentionTypes.TICKET_WALKTHROUGH:
+      chatbot.doing_task_1 = True
+    elif chatbot.last_intention == Chatbot.IntentionTypes.DELAY_WALKTHROUGH:
+      chatbot.doing_task_1 = False
+
     chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=chatbot.last_intention)
     chatbot.last_message = user_input
   
-  # find all the information that was in the user's message
-  declare_all_information(user_input)
+
   
   print(f"\nRunning engine with facts:\n{chatbot_engine.facts}\n")
   chatbot_engine.run()

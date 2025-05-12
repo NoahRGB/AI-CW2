@@ -31,26 +31,26 @@ warnings.filterwarnings('ignore')
 with open("../delay_data/london_to_norwich.pickle", "rb") as file:
     rf_regressor = pickle.load(file)
 
-data = {
-    "current_stop": "SRA",
-    "time": DateTime(hour=15, minute=30),
-    "to_nrw": True,
-    "current_delay": 2
-}
-
-# data = one_hot_encode(pd.DataFrame([encode_user_data(data)]))
-
-def find_remaining_delays(regressor, data):
+def find_remaining_delays(data):
+    delays = {}
     encoded_data = encode_user_data(data)
     while encoded_data:
         ready_to_predict = one_hot_encode(pd.DataFrame([encoded_data]))
-        predicted_delay = regressor.predict(ready_to_predict)[0]
-        print(f"Predicted delay at {encoded_data['next_stop']}: {predicted_delay}")
+        predicted_delay = rf_regressor.predict(ready_to_predict)[0]
+        delays[encoded_data["next_stop"]] = round(predicted_delay, 1)
         encoded_data = encode_user_data({
             "current_stop": encoded_data["next_stop"],
             "time": data["time"],
             "to_nrw": data["to_nrw"],
             "current_delay": predicted_delay
         })
+    return delays
 
-find_remaining_delays(rf_regressor, data)
+if __name__ == "__main__":
+    data = {
+        "current_stop": "SRA",
+        "time": DateTime(hour=15, minute=30),
+        "to_nrw": True,
+        "current_delay": 2
+    }
+    find_remaining_delays(data)

@@ -2,6 +2,7 @@ from random import choice
 
 from ticket_types import TicketTypes
 from cheapest_ticket import NationalRailScraper, TicketTypes
+from delay_prediction import find_remaining_delays
 from date_time import DateTime
 from fact_types import *
 
@@ -61,7 +62,11 @@ class ChatbotEngine(KnowledgeEngine):
                   & ~ReturnTime(time=W(), pending=True)
                   & ~ReturnDate(date=W(), pending=True)
                   & ~AdultTickets(count=W(), pending=True)
-                  & ~ChildTickets(count=W(), pending=True))))
+                  & ~ChildTickets(count=W(), pending=True)
+                  & ~CurrentStation(name=W(), code=W(), pending=True)
+                  & ~CurrentTime(time=W(), pending=True)
+                  & ~CurrentDelay(amount=W(), pending=True)
+                  & ~Direction(to_nrw=W(), pending=True))))
     def unsure(self):
         self.chatbot.send_bot_message("I'm unsure what you mean, but you can ask me about train tickets!")
 
@@ -342,15 +347,84 @@ class ChatbotEngine(KnowledgeEngine):
         scraper.launch_scraper()
         scraper.clear_cookies_popup()
         cheapest = scraper.get_cheapest_listed()
-        self.chatbot.send_bot_message(f"Cheapest ticket from {origin_name} to {destination_name} leaving after {total_departure_time.get_date()} at {total_departure_time.get_time()} ({adult_count} adults and {child_count} children):<br>⏰ Departure time: {cheapest['departure_time']}<br>⏰ Arrival time: {cheapest['arrival_time']}<br>⏰ Duration: {cheapest['length']}<br>💵 Price: {cheapest['price']}<br>🌐 Link: <a class='dark' target='_blank' href='{scraper.get_current_url()}'>click here</a>")
+        self.chatbot.send_bot_message(f"Cheapest ticket from {origin_name} to {destination_name} leaving after {total_departure_time.get_date()} at {total_departure_time.get_time()} ({adult_count} adults and {child_count} children):<br>🟢 Departure time: {cheapest['departure_time']}<br>🔴 Arrival time: {cheapest['arrival_time']}<br>⏰ Duration: {cheapest['length']}<br>💷 Price: {cheapest['price']}<br>🌐 Link: <a class='dark' target='_blank' href='{scraper.get_current_url()}'>click here</a>")
 
-    # ====== DELAY PREDICTION ======
+    # ====== INPUTTING CURRENT STATION ======
 
-    # @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)
-    #           & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True)))
-    # def prompt_current_station_confirmation(self, current_station_name, current_station_code):
-    #     self.chatbot.send_bot_message(f"Confirm current station {current_station_name} ({current_station_code})?")
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True))
+    def confirm_pending_current_station(self, current_station_name, current_station_code):
+        self.chatbot.current_station_fact = self.modify(self.chatbot.current_station_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
+        
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM))
+              & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True))
+    def prompt_current_station_confirmation(self, current_station_name, current_station_code):
+        self.chatbot.send_bot_message(f"Confirm current station {current_station_name} ({current_station_code})?")
 
     @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) & ~CurrentStation(pending=False))
     def select_current_station(self):
         self.chatbot.send_bot_message(f"I can help to predict delays along the Norwich -> London Liverpool Street line<br>What station are you currently at?")
+
+    # ====== INPUTTING CURRENT TIME ======
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) 
+          & CurrentTime(time=MATCH.current_time, pending=True)
+          & ~CurrentStation(name=W(), code=W(), pending=True))
+    def confirm_pending_current_time(self, current_time):
+        self.chatbot.current_time_fact = self.modify(self.chatbot.current_time_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
+        
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM))
+              & CurrentTime(time=MATCH.current_time, pending=True))
+    def prompt_current_time_confirmation(self, current_time):
+        self.chatbot.send_bot_message(f"Confirm current time {current_time.get_time()}?")
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) 
+          & CurrentStation(name=W(), code=W(), pending=False) & ~CurrentTime(pending=False))
+    def select_current_time(self):
+        self.chatbot.send_bot_message(f"What is the current time?")
+
+    # ====== INPUTTING CURRENT DELAY ======
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) 
+          & CurrentDelay(amount=MATCH.current_delay, pending=True)
+          & ~CurrentStation(name=W(), code=W(), pending=True)
+          & ~CurrentTime(time=W(), pending=True))
+    def confirm_pending_current_delay(self, current_delay):
+        self.chatbot.current_delay_fact = self.modify(self.chatbot.current_delay_fact, pending=False)
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
+        
+    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM))
+              & CurrentDelay(amount=MATCH.current_delay, pending=True))
+    def prompt_current_delay_confirmation(self, current_delay):
+        self.chatbot.send_bot_message(f"Confirm current delay of {current_delay} minutes?")
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) 
+          & CurrentStation(name=W(), code=W(), pending=False)
+          & CurrentTime(time=W(), pending=False) 
+          & ~CurrentDelay(pending=False))
+    def select_current_delay(self):
+        self.chatbot.send_bot_message(f"What is your current delay (minutes)?")
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DECLARING_DELAY)
+        
+    # ====== PREDICT DELAY ======
+    
+    @Rule(CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=False)
+          & CurrentTime(time=MATCH.current_time, pending=False)
+          & CurrentDelay(amount=MATCH.current_delay, pending=False))
+    def predict_delay(self, current_station_name, current_station_code, current_time, current_delay):
+        print("Predicting delay")
+
+        data = {
+            "current_stop": current_station_code,
+            "time": current_time,
+            "to_nrw": True,
+            "current_delay": current_delay
+        }
+
+        delays = find_remaining_delays(data)
+        delay_message = f"Further delays from {data["current_stop"]} {'towards Norwich' if data["to_nrw"] else 'towards London Liverpool Street'} at {data["time"].get_time()} with {data["current_delay"]} minutes of delay <br>"
+        for delay in delays:
+            mintutes_message = (str(delays[delay]) + " minutes late") if delays[delay] > 0 else (str(delays[delay])[1:] + " minutes early")
+            delay_message += f"Delay at {delay}: {mintutes_message}<br>"
+        self.chatbot.send_bot_message(delay_message)
