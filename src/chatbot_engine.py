@@ -423,7 +423,7 @@ class ChatbotEngine(KnowledgeEngine):
         }
 
         delays = find_remaining_delays(data)
-        delay_message = f"Further delays from {data["current_stop"]} {'towards Norwich' if data["to_nrw"] else 'towards London Liverpool Street'} at {data["time"].get_time()} with {data["current_delay"]} minutes of delay <br>"
+        delay_message = f"Further delays from {data['current_stop']} {'towards Norwich' if data['to_nrw'] else 'towards London Liverpool Street'} at {data['time'].get_time()} with {data['current_delay']} minute(s) of delay:<br>"
         for delay in delays:
             mintutes_message = (str(delays[delay]) + " minutes late") if delays[delay] > 0 else (str(delays[delay])[1:] + " minutes early")
             delay_message += f"Delay at {delay}: {mintutes_message}<br>"

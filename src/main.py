@@ -121,6 +121,7 @@ def get_chatbot_message():
 
   
   print(f"\nRunning engine with facts:\n{chatbot_engine.facts}\n")
+  print(f"\n Doing task 1? {chatbot.doing_task_1}")
   chatbot_engine.run()
   return chatbot.last_chatbot_message
 

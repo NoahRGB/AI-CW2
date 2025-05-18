@@ -1,4 +1,3 @@
-x
 let isChatbotTurn = false;
 let isFirstMessage = true;
 let inputBox = document.getElementById("input-box");

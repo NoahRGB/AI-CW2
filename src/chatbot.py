@@ -108,7 +108,7 @@ class Chatbot:
                 cleaned_text = cleaned_text + token.text + " "
         return cleaned_text.strip()
     
-    def find_user_intention(self, user_input, min_similarity=0.7):
+    def find_user_intention(self, user_input, min_similarity=0.85):
         # find what kind of message the user sent using Chatbot.IntentionTypes
         user_input = user_input.lower()
         cleaned_input = self.clean_text(user_input)
@@ -366,10 +366,11 @@ class Chatbot:
         # find any stations in message
         detected_stations = self.detect_station_name(message)
         if detected_stations:
+            print(detected_stations)
             for station in detected_stations:
                 name, code, type = station
 
-                if not self.doing_task_1 == Chatbot.IntentionTypes.DELAY_WALKTHROUGH:
+                if not self.doing_task_1:
                     detected["current_station"] = (name, code)
                 else:
                     if type:
@@ -388,7 +389,7 @@ class Chatbot:
         if detected_times:
             for time in detected_times:
                 time, time_type = time
-                if not self.doing_task_1 == Chatbot.IntentionTypes.DELAY_WALKTHROUGH:
+                if not self.doing_task_1:
                     detected["current_time"] = time
                 else:
                     if time_type == Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME:
