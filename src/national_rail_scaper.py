@@ -16,7 +16,7 @@ class NationalRailScraper:
         options = Options()
         options.add_argument("--log-level=3")
         # headless means that a browser window won't actually open and it will do it in the background instead
-        # options.add_argument("--headless=new")
+        options.add_argument("--headless=new")
         self.browser = Chrome(options=options)
         self.actions = ActionChains(self.browser)
         self.ticket_type = None
