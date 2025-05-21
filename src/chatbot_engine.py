@@ -1,8 +1,8 @@
 from random import choice
 
 from ticket_types import TicketTypes
-# from cheapest_ticket import NationalRailScraper, TicketTypes
 from national_rail_scaper import national_rail_cheapest_ticket
+from realtimetickets_scraper import realtimetickets_cheapest_ticket
 from delay_prediction import find_remaining_delays
 from date_time import DateTime
 from fact_types import *
@@ -342,7 +342,27 @@ class ChatbotEngine(KnowledgeEngine):
                                          month=return_date.month)
 
 
-        cheapest_ticket_info = national_rail_cheapest_ticket(origin_code, destination_code, ticket_type, total_departure_date, total_return_date, adult_count, child_count)
+        cheapest_ticket_info = None
+        
+        nr_cheapest_ticket_info = national_rail_cheapest_ticket(origin_code, destination_code, ticket_type, total_departure_date, total_return_date, adult_count, child_count)
+        rtt_cheapest_ticket_info = realtimetickets_cheapest_ticket(origin_name, destination_name, ticket_type, total_departure_date, total_return_date, adult_count, child_count)
+        
+        if nr_cheapest_ticket_info == None and rtt_cheapest_ticket_info != None:
+            cheapest_ticket_info = rtt_cheapest_ticket_info
+        elif rtt_cheapest_ticket_info == None and nr_cheapest_ticket_info != None:
+            cheapest_ticket_info = nr_cheapest_ticket_info
+        
+        nr_cheapest_ticket, nr_url = nr_cheapest_ticket_info
+        rtt_cheapest_ticket, rtt_url = rtt_cheapest_ticket_info
+        
+        print(f"\nNational Rail cheapest ticket: {nr_cheapest_ticket['price']}")
+        print(f"\nRealtimetickets cheapest ticket: {nr_cheapest_ticket['price']}")
+        
+
+        if float(nr_cheapest_ticket["price"][1:]) < float(nr_cheapest_ticket["price"][1:]):
+            cheapest_ticket_info = (nr_cheapest_ticket, nr_url)
+        else:
+            cheapest_ticket_info = (rtt_cheapest_ticket, rtt_url)
         
         if cheapest_ticket_info:
             cheapest, url = cheapest_ticket_info
@@ -362,6 +382,61 @@ class ChatbotEngine(KnowledgeEngine):
                                               + f"🌐 Link: <a class='dark' target='_blank' href='{url}'>click here</a>")
         else:
             self.chatbot.send_bot_message(f"There was an issue with your specified journey")
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             
     # ====== INPUTTING CURRENT STATION ======
 

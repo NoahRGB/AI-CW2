@@ -52,7 +52,7 @@ def national_rail_cheapest_ticket(origin_station, destination_station, ticket_ty
         options = Options()
         options.add_argument("--log-level=3")
 
-        # options.add_argument("--headless=new")
+        options.add_argument("--headless=new")
         browser = Chrome(options=options)
         actions = ActionChains(browser)
 
