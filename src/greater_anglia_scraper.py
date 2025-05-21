@@ -18,7 +18,7 @@ class GreaterAngliaScraper:
         options = Options()
         options.add_argument("--log-level=3")
         # headless means that a browser window won't actually open and it will do it in the background instead
-        options.add_argument("--headless=new")
+        # options.add_argument("--headless=new")
     #       options.addArguments("--headless");
 
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -125,22 +125,32 @@ class GreaterAngliaScraper:
         return found_tickets
     
     def get_cheapest_ticket(self):
-        ticket_lists = self.browser.find_elements(By.CLASS_NAME, "ColumnContent-module__alternativesListWrapper__YSLNb")
-
-        outbound_tickets, return_tickets = [], []
-    
-        if len(ticket_lists) > 0: outbound_tickets = self.get_ticket_data_in_list(ticket_lists[0])
-        if len(ticket_lists) >= 1: return_tickets = self.get_ticket_data_in_list(ticket_lists[1])
         
-        if return_tickets == []:
-            # must be a single journey
-            cheapest_ticket = min(outbound_tickets, key=lambda ticket: ticket["price"])
-            return cheapest_ticket
-        else:
-            # must be a return journey
-            cheapest_outbound_ticket = min(outbound_tickets, key=lambda ticket: ticket["price"])
-            cheapest_return_ticket = return_tickets[outbound_tickets.index(cheapest_outbound_ticket)]
-            return cheapest_outbound_ticket, cheapest_return_ticket
+        sleep(3)
+        buttons = self.browser.find_elements(By.TAG_NAME, "button")
+        for button in buttons:
+            if button.text == "No thanks":
+                button.click()
+        
+        
+        # ticket_lists = self.browser.find_elements(By.CLASS_NAME, "ColumnContent-module__alternativesListWrapper__YSLNb")
+        
+        # if len(ticket_lists) == 0: return None
+
+        # outbound_tickets, return_tickets = [], []
+    
+        # if len(ticket_lists) > 0: outbound_tickets = self.get_ticket_data_in_list(ticket_lists[0])
+        # if len(ticket_lists) >= 1: return_tickets = self.get_ticket_data_in_list(ticket_lists[1])
+        
+        # if return_tickets == []:
+        #     # must be a single journey
+        #     cheapest_ticket = min(outbound_tickets, key=lambda ticket: ticket["price"])
+        #     return cheapest_ticket
+        # else:
+        #     # must be a return journey
+        #     cheapest_outbound_ticket = min(outbound_tickets, key=lambda ticket: ticket["price"])
+        #     cheapest_return_ticket = return_tickets[outbound_tickets.index(cheapest_outbound_ticket)]
+        #     return cheapest_outbound_ticket, cheapest_return_ticket
         
     def launch_scraper(self):
         self.browser.get(self.url)
@@ -159,14 +169,14 @@ if __name__ == "__main__":
     print("Set stations")
     scraper.set_ticket_type(TicketTypes.RETURN)
     print("Set ticket types")
-    scraper.set_departure_time(DateTime(hour=15, minute=30, day=13, month=5))
-    scraper.set_return_time(DateTime(hour=20, minute=0, day=13, month=5))     
+    scraper.set_departure_time(DateTime(hour=15, minute=30, day=20, month=5))
+    scraper.set_return_time(DateTime(hour=20, minute=0, day=20, month=5))     
     print("Set times")                  
     scraper.set_ticket_counts(2, 1)
     print("Set ticket counts")
     scraper.search_for_journey()
     print("Searching for journey")
     cheapest_ticket = scraper.get_cheapest_ticket()
-    print(cheapest_ticket)
+    # print(cheapest_ticket)
 
     input()

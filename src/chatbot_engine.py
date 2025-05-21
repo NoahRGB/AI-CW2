@@ -1,7 +1,8 @@
 from random import choice
 
 from ticket_types import TicketTypes
-from cheapest_ticket import NationalRailScraper, TicketTypes
+# from cheapest_ticket import NationalRailScraper, TicketTypes
+from national_rail_scaper import national_rail_cheapest_ticket
 from delay_prediction import find_remaining_delays
 from date_time import DateTime
 from fact_types import *
@@ -328,27 +329,40 @@ class ChatbotEngine(KnowledgeEngine):
         
         ticket_type = self.chatbot.ticket_fact["type"]
         
-        total_departure_time = DateTime(minute=departure_time.get_min(),
+        total_departure_date = DateTime(minute=departure_time.get_min(),
                                         hour=departure_time.get_hour(),
                                         day=departure_date.day,
                                         month=departure_date.month)
         
-        scraper = NationalRailScraper(origin_code, destination_code, total_departure_time, int(adult_count), int(child_count))
-        
-        if ticket_type == TicketTypes.SINGLE:
-            scraper.set_single_ticket(total_departure_time)
-        elif ticket_type == TicketTypes.RETURN:
-            total_return_time = DateTime(minute=return_time.get_min(),
+        total_return_date = None
+        if ticket_type == TicketTypes.RETURN:
+            total_return_date = DateTime(minute=return_time.get_min(),
                                          hour=return_time.get_hour(),
                                          day=return_date.day,
                                          month=return_date.month)
-            scraper.set_return_ticket(total_departure_time, total_return_time)
 
-        scraper.launch_scraper()
-        scraper.clear_cookies_popup()
-        cheapest = scraper.get_cheapest_listed()
-        self.chatbot.send_bot_message(f"Cheapest ticket from {origin_name} to {destination_name} leaving after {total_departure_time.get_date()} at {total_departure_time.get_time()} ({adult_count} adults and {child_count} children):<br>🟢 Departure time: {cheapest['departure_time']}<br>🔴 Arrival time: {cheapest['arrival_time']}<br>⏰ Duration: {cheapest['length']}<br>💷 Price: {cheapest['price']}<br>🌐 Link: <a class='dark' target='_blank' href='{scraper.get_current_url()}'>click here</a>")
 
+        cheapest_ticket_info = national_rail_cheapest_ticket(origin_code, destination_code, ticket_type, total_departure_date, total_return_date, adult_count, child_count)
+        
+        if cheapest_ticket_info:
+            cheapest, url = cheapest_ticket_info
+            if ticket_type == TicketTypes.SINGLE:
+                self.chatbot.send_bot_message(f"Cheapest single ticket from {origin_name} to {destination_name} leaving after {total_departure_date.get_date()}"
+                                              + f"at {total_departure_date.get_time()} ({adult_count} adults and {child_count} children):<br>"
+                                              + f"🟢 Departure time: {cheapest['departure_time']}<br>🔴 Arrival time: {cheapest['arrival_time']}<br>"
+                                              + f"⏰ Duration: {cheapest['length']}<br>💷 Price: {cheapest['price']}<br>"
+                                              + f"🌐 Link: <a class='dark' target='_blank' href='{url}'>click here</a>")
+            else:
+                self.chatbot.send_bot_message(f"Cheapest return ticket from {origin_name} to {destination_name} leaving after {total_departure_date.get_date()}"
+                                              + f" at {total_departure_date.get_time()} <br> and returning after {total_return_date.get_date()} at {total_return_date.get_time()}"
+                                              + f"({adult_count} adults and {child_count} children):<br>🟢 Outbound departure time: {cheapest['departure_time']}<br>"
+                                              + f"🔴 Outbound arrival time: {cheapest['arrival_time']}<br>🟢 Return departure time: {cheapest['return_departure_time']}<br>"
+                                              + f"🔴 Return arrival time: {cheapest['return_arrival_time']}<br>⏰ Outbound duration: {cheapest['length']}<br>"
+                                              + f"⏰ Return duration: {cheapest['return_length']}<br>💷 Price: {cheapest['price']}<br>"
+                                              + f"🌐 Link: <a class='dark' target='_blank' href='{url}'>click here</a>")
+        else:
+            self.chatbot.send_bot_message(f"There was an issue with your specified journey")
+            
     # ====== INPUTTING CURRENT STATION ======
 
     @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True))

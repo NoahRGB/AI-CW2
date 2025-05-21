@@ -93,52 +93,68 @@ if __name__ == "__main__":
     
     # data = pd.read_csv("../delay_data/2022_service_details_Norwich_to_London.csv", parse_dates=["planned_arrival_time", "planned_departure_time", "actual_arrival_time", "actual_departure_time", "date_of_service"], dayfirst=True)
     # data = pd.read_csv("../delay_data/all_Norwich_to_London.csv", parse_dates=["planned_arrival_time", "planned_departure_time", "actual_arrival_time", "actual_departure_time", "date_of_service"], dayfirst=True)
-    data = pd.read_csv("../delay_data/all_London_to_Norwich.csv", parse_dates=["planned_arrival_time", "planned_departure_time", "actual_arrival_time", "actual_departure_time", "date_of_service"], dayfirst=False)
+    # data = pd.read_csv("../delay_data/all_London_to_Norwich.csv", parse_dates=["planned_arrival_time", "planned_departure_time", "actual_arrival_time", "actual_departure_time", "date_of_service"], dayfirst=False)
 
-    training_data = []
-    for _, group in data.groupby("rid"): # will ensure data rows are grouped by train journey (i.e. their train id/RID)
-        for i in range(0, len(group) - 1): # for every row of data...
+    # training_data = []
+    # for _, group in data.groupby("rid"): # will ensure data rows are grouped by train journey (i.e. their train id/RID)
+    #     for i in range(0, len(group) - 1): # for every row of data...
             
-            # get the current/next data rows
-            current_stop = group.iloc[i]
-            next_stop = group.iloc[i + 1]
+    #         # get the current/next data rows
+    #         current_stop = group.iloc[i]
+    #         next_stop = group.iloc[i + 1]
             
-            # find the delays for the current stop and the next stop (the target feature)
-            current_stop_delay = calculate_delay(current_stop["actual_arrival_time"], current_stop["planned_arrival_time"])
-            next_stop_delay = calculate_delay(next_stop["actual_arrival_time"], next_stop["planned_arrival_time"])
+    #         # find the delays for the current stop and the next stop (the target feature)
+    #         current_stop_delay = calculate_delay(current_stop["actual_arrival_time"], current_stop["planned_arrival_time"])
+    #         next_stop_delay = calculate_delay(next_stop["actual_arrival_time"], next_stop["planned_arrival_time"])
             
-            # find the day of the week and the time of day using sin and cos so it has an understanding of how time cycles    
-            current_day = current_stop["date_of_service"].dayofweek
-            if pd.notna(current_stop["planned_arrival_time"]):
-                sin_time = np.sin(2 * np.pi * (current_stop["planned_arrival_time"].hour * 60 + current_stop["planned_arrival_time"].minute) / 1440)
-                cos_time = np.cos(2 * np.pi * (current_stop["planned_arrival_time"].hour * 60 + current_stop["planned_arrival_time"].minute) / 1440)
-            else:
-                sin_time = np.sin(2 * np.pi * (current_stop["planned_departure_time"].hour * 60 + current_stop["planned_departure_time"].minute) / 1440)
-                cos_time = np.cos(2 * np.pi * (current_stop["planned_departure_time"].hour * 60 + current_stop["planned_departure_time"].minute) / 1440)
+    #         # find the day of the week and the time of day using sin and cos so it has an understanding of how time cycles    
+    #         current_day = current_stop["date_of_service"].dayofweek
+    #         if pd.notna(current_stop["planned_arrival_time"]):
+    #             sin_time = np.sin(2 * np.pi * (current_stop["planned_arrival_time"].hour * 60 + current_stop["planned_arrival_time"].minute) / 1440)
+    #             cos_time = np.cos(2 * np.pi * (current_stop["planned_arrival_time"].hour * 60 + current_stop["planned_arrival_time"].minute) / 1440)
+    #         else:
+    #             sin_time = np.sin(2 * np.pi * (current_stop["planned_departure_time"].hour * 60 + current_stop["planned_departure_time"].minute) / 1440)
+    #             cos_time = np.cos(2 * np.pi * (current_stop["planned_departure_time"].hour * 60 + current_stop["planned_departure_time"].minute) / 1440)
                 
-            if current_stop_delay and next_stop_delay:
-                # add all the data as one 'training row'
-                training_data.append({
-                    "current_stop": current_stop["location"],
-                    "next_stop": next_stop["location"],
-                    "sin_time": sin_time,
-                    "cos_time": cos_time,
-                    "day": current_day,
-                    "current_delay": current_stop_delay,
-                    "target_delay": next_stop_delay
-                })
-    training_data = pd.DataFrame(training_data)
+    #         if current_stop_delay and next_stop_delay:
+    #             # add all the data as one 'training row'
+    #             training_data.append({
+    #                 "current_stop": current_stop["location"],
+    #                 "next_stop": next_stop["location"],
+    #                 "sin_time": sin_time,
+    #                 "cos_time": cos_time,
+    #                 "day": current_day,
+    #                 "current_delay": current_stop_delay,
+    #                 "target_delay": next_stop_delay
+    #             })
+    # training_data = pd.DataFrame(training_data)
+    
 
-    # remove outliers since the data is full of them and it heavily impacts results
-    training_data["current_delay"] = training_data["current_delay"].clip(lower=-30, upper=120)
-    training_data["target_delay"] = training_data["target_delay"].clip(lower=-30, upper=120)
 
-    # pick the training features and target features that will be used from the training data
-    X = training_data[["current_delay", "sin_time", "cos_time", "current_stop", "next_stop"]]
-    y = training_data["target_delay"]
+    # # remove outliers since the data is full of them and it heavily impacts results
+    # training_data["current_delay"] = training_data["current_delay"].clip(lower=-30, upper=120)
+    # training_data["target_delay"] = training_data["target_delay"].clip(lower=-30, upper=120)
 
-    # encode categorical data using one hot encoding
-    X = one_hot_encode(X)
+    # # pick the training features and target features that will be used from the training data
+    # X = training_data[["current_delay", "sin_time", "cos_time", "current_stop", "next_stop"]]
+    # y = training_data["target_delay"]
+
+    # # encode categorical data using one hot encoding
+    # X = one_hot_encode(X)
+    
+    # print(X)
+    
+    # with open("../delay_data/nrw_to_lst_training_data.pickle", "wb") as file:
+    #     pickle.dump(X, file)
+        
+    # with open("../delay_data/nrw_to_lst_target_data.pickle", "wb") as file:
+    #     pickle.dump(y, file)
+        
+    with open("../delay_data/nrw_to_lst_training_data.pickle", "rb") as file:
+        X = pickle.load(file)
+        
+    with open("../delay_data/nrw_to_lst_target_data.pickle", "rb") as file:
+        y = pickle.load(file)
 
     # split data into training/testing/validation
     X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
