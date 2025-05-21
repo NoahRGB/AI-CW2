@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 # a class to hold date / time so that all python files can use the same type
 
@@ -53,6 +54,17 @@ class DateTime:
     
     def get_date(self):
         return f"{self.get_day()}/{self.get_month()}/{self.get_year()}"
+    
+    def round_to_nearest_hour(self):
+        if self.__minute >= 30:
+            # round up
+            self.hour += 1
+            self.__minute = 0
+        else:
+            # round down
+            self.hour -= 1
+            self.__minute = 0
+            
     
     def __lt__(self, other):
         if isinstance(other, DateTime): # DateTime is less than another DateTime
@@ -139,3 +151,8 @@ class DateTime:
             found_dates.append((DateTime(day=day, month=month), original))
             
         return None if len(found_dates) == 0 else found_dates
+
+    @staticmethod
+    def today():
+        now = datetime.now()
+        return DateTime(day = now.day, month = now.month, year = now.year, hour = now.hour, minute = now.minute)

@@ -7,6 +7,7 @@ import requests
 from date_time import DateTime
 from ticket_types import TicketTypes
 
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -49,11 +50,12 @@ def get_cheapest_ticket_in_list(browser, direction):
 
 
 def realtimetickets_cheapest_ticket(origin_station, destination_station, ticket_type, departure_date, return_date, adult_tickets, child_tickets):
+        service = Service("C:/WebDriver/chromedriver.exe") # replace this with your chromedriver location
         options = Options()
         options.add_argument("--log-level=3")
 
         options.add_argument("--headless=new")
-        browser = Chrome(options=options)
+        browser = Chrome(service=service, options=options)
         actions = ActionChains(browser)
         
         # load realtimetickets station code dictionary from build_realtimetickets_dictionary()
@@ -73,7 +75,7 @@ def realtimetickets_cheapest_ticket(origin_station, destination_station, ticket_
 
         browser.get(url)
         
-        sleep(1)
+        sleep(3)
         
         cheapest_ticket = get_cheapest_ticket_in_list(browser, "outbound")
         if ticket_type == TicketTypes.RETURN and cheapest_ticket != None:
@@ -83,7 +85,6 @@ def realtimetickets_cheapest_ticket(origin_station, destination_station, ticket_
                 cheapest_ticket["return_arrival_time"] = return_cheapest_ticket["arrival_time"]
                 cheapest_ticket["return_length"] = return_cheapest_ticket["length"]
 
-        print(cheapest_ticket)
         browser.close()
         return (cheapest_ticket, url) if cheapest_ticket != None else None
         
@@ -92,13 +93,13 @@ def realtimetickets_cheapest_ticket(origin_station, destination_station, ticket_
 if __name__ == "__main__":
     
     # test journey
-    origin_station = "Norwich"
-    destination_station = "Colchester"
-    departure_date = DateTime(hour=12, minute=15, day=21, month=5, year=2025)
-    return_date = DateTime(hour=20, minute=0, day=21, month=5, year=2025)
-    ticket_type = TicketTypes.SINGLE
-    child_tickets = 1
+    origin_station = "Colchester"
+    destination_station = "Norwich"
+    departure_date = DateTime(hour=15, minute=30, day=25, month=5, year=2025)
+    return_date = DateTime(hour=20, minute=0, day=25, month=5, year=2025)
+    ticket_type = TicketTypes.RETURN
     adult_tickets = 1
+    child_tickets = 0
     
     # build_realtimetickets_dictionary()
     ticket = realtimetickets_cheapest_ticket(origin_station, destination_station, ticket_type, departure_date, return_date, adult_tickets, child_tickets)

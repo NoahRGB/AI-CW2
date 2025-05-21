@@ -25,7 +25,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 
 from sklearn import neighbors
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn.neural_network import MLPRegressor
@@ -129,8 +129,6 @@ if __name__ == "__main__":
     #             })
     # training_data = pd.DataFrame(training_data)
     
-
-
     # # remove outliers since the data is full of them and it heavily impacts results
     # training_data["current_delay"] = training_data["current_delay"].clip(lower=-30, upper=120)
     # training_data["target_delay"] = training_data["target_delay"].clip(lower=-30, upper=120)
@@ -157,8 +155,10 @@ if __name__ == "__main__":
         y = pickle.load(file)
 
     # split data into training/testing/validation
-    X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
-    X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2, random_state=SEED)
+    # X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
+    # X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2, random_state=SEED)
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
 
     print("Prepared all data successfully")
 
@@ -167,62 +167,115 @@ if __name__ == "__main__":
 
     # /////////////// TRAINING MODELS & MAKING PREDICTIONS ///////////////////
 
-    # MAE = mean absolute error
-    # MSE = mean squared error
+    model = models.Sequential([
+        layers.Dense(128, activation="relu", input_shape=(X.shape[1],)),
+        layers.Dense(64, activation="relu"),
+        layers.Dense(32, activation="relu"),
+        layers.Dense(16, activation="relu"),
+        layers.Dense(1, activation="linear")
+    ])
 
+    early_stopping = EarlyStopping(monitor='loss', patience=5, restore_best_weights=True)
+    model.compile(optimizer=Adam(), loss="mse", metrics=["mae"])
+    model.fit(X_train, y_train, epochs=10, batch_size=16, callbacks=[early_stopping])
 
-    # model = models.Sequential([
-    #     layers.Dense(128, activation="relu", input_shape=(X.shape[1],)),
-    #     layers.Dense(64, activation="relu"),
-    #     layers.Dense(32, activation="relu"),
-    #     layers.Dense(16, activation="relu"),
-    #     layers.Dense(1, activation="linear")
-    # ])
+    nn_predictions = model.predict(X_test)
+    nn_MAE = mean_absolute_error(y_test, nn_predictions)
+    nn_MSE = mean_squared_error(y_test, nn_predictions)
+    nn_r2 = r2_score(y_test, nn_predictions)
 
-    # early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-    # model.compile(optimizer=Adam(), loss="mse", metrics=["mae"])
-    # model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=50, batch_size=32, callbacks=[early_stopping])
+    baseline_predictions = [y_test.mean()] * len(y_test)
+    baseline_MAE = mean_absolute_error(y_test, baseline_predictions)
+    baseline_MSE = mean_squared_error(y_test, baseline_predictions)
+    baseline_r2 = r2_score(y_test, baseline_predictions)
 
-    # nn_predictions = model.predict(X_test)
-    # nn_MAE = mean_absolute_error(y_test, nn_predictions)
-    # nn_MSE = mean_squared_error(y_test, nn_predictions)
-
-
-
-    # baseline_predictions = [y_test.mean()] * len(y_test)
-    # baseline_mean_absolute_err = mean_absolute_error(y_test, baseline_predictions)
-    # baseline_mean_squared_err = mean_squared_error(y_test, baseline_predictions)
-
-    baseline_predictions = [y.mean()] * len(y)
-    baseline_mean_absolute_err = mean_absolute_error(y, baseline_predictions)
-    baseline_mean_squared_err = mean_squared_error(y, baseline_predictions)
-
-
-
-
-    # knn = neighbors.KNeighborsRegressor(3, weights="uniform")
-    # knn = knn.fit(X_train, y_train)
-    # knn_predictions = knn.predict(X_test)
-    # knn_MAE = mean_absolute_error(y_test, knn_predictions)
+    knn = neighbors.KNeighborsRegressor(3, weights="uniform")
+    knn = knn.fit(X_train, y_train)
+    knn_predictions = knn.predict(X_test)
+    knn_MAE = mean_absolute_error(y_test, knn_predictions)
+    knn_MSE = mean_squared_error(y_test, knn_predictions)
+    knn_r2 = r2_score(y_test, knn_predictions)
 
     rf = RandomForestRegressor(n_estimators=100, random_state=SEED)
-    rf.fit(X, y)
-    rf_predictions = rf.predict(X)
-    rf_MAE = mean_absolute_error(y, rf_predictions)
-
-    # print(f"NN MSE: {nn_MAE}")
-    # print(f"NN MAE: {nn_MSE}")
-    print(f"Baseline mean absolute error: {baseline_mean_absolute_err}")
-    print(f"Baseline mean squared error: {baseline_mean_squared_err}")
-    # print(f"KNN MAE: {knn_MAE}")
+    rf.fit(X_train, y_train)
+    rf_predictions = rf.predict(X_test)
+    rf_MAE = mean_absolute_error(y_test, rf_predictions)
+    rf_MSE = mean_squared_error(y_test, rf_predictions)
+    rf_r2 = r2_score(y_test, rf_predictions)
+    
+    print(f"NN MAE: {nn_MAE}")
+    print(f"NN MSE: {nn_MSE}")
+    print(f"NN R^2: {nn_r2}")
+    print("~~~~~~~~~~~~~~~~~~~~")
+    print(f"Baseline MAE: {baseline_MAE}")
+    print(f"Baseline MSE: {baseline_MSE}")
+    print(f"Baseline R^2: {baseline_r2}")
+    print("~~~~~~~~~~~~~~~~~~~~")
+    print(f"KNN MAE: {knn_MAE}")
+    print(f"KNN MSE: {knn_MSE}")
+    print(f"KNN R^2: {knn_r2}")
+    print("~~~~~~~~~~~~~~~~~~~~")
     print(f"RF MAE: {rf_MAE}")
+    print(f"RF MSE: {rf_MSE}")
+    print(f"RF R^2: {rf_r2}")
+    
+    x_axis = ["Neural network", "kNN", "Random Forest"]
+    
+    MAEs = [nn_MAE, knn_MAE, rf_MAE]
+    bars = plt.bar(x_axis, MAEs, color="grey")
+    bars[MAEs.index(min(MAEs))].set_color("green")
+    plt.title("Bar chart showing the Mean Absolute Error (MAE) of 3 regressors using the train dataset")
+    plt.xlabel("Regressors")
+    plt.ylabel("Mean Absolute Error (MAE)")
+    plt.savefig("../plots/MAE_bars.png", bbox_inches='tight')
+    plt.show()
+    
+    # MSEs = [nn_MSE, knn_MSE, rf_MSE]
+    # bars = plt.bar(x_axis, MSEs, color="grey")
+    # bars[MSEs.index(min(MSEs))].set_color("green")
+    # plt.title("Bar chart showing the Mean Squared Error (MSE) of 3 regressors using the train dataset")
+    # plt.xlabel("Regressors")
+    # plt.ylabel("Mean Squared Error (MSE)")
+    # plt.savefig("../plots/MSE_bars.png", bbox_inches='tight')
+    # plt.show()
+    
+    # r2s = [nn_r2, knn_r2, rf_r2]
+    # bars = plt.bar(x_axis, r2s, color="grey")
+    # bars[r2s.index(max(r2s))].set_color("green")
+    # plt.title("Bar chart showing the R^2 score of 3 regressors using the train dataset")
+    # plt.xlabel("Regressors")
+    # plt.ylabel("R^2 regressor score)")
+    # plt.savefig("../plots/r2_bars.png", bbox_inches='tight')
+    # plt.show()
 
     # with open("../delay_data/london_to_norwich.pickle", "wb") as file:
     #     pickle.dump(rf, file)
 
     # plt.figure(figsize=(20, 20))
-    # plt.scatter(X["day"], y, color="black", label="training data", s=5)
-    # plt.xlabel("Day")
+    # plt.scatter(X["current_delay"], y, color="black", label="training data", s=5)
+    # plt.xlabel("Current")
     # plt.ylabel("Target delay (mins) (e.g. the next station's delay)")
-    # # plt.plot(X["tar"], y, color="red", label="predicted")
+    # plt.plot(y, rf_predictions, color="red", label="predicted")
     # plt.show()
+    
+    
+    
+    x_vals = X_test["current_delay"].values
+    
+    sorted_indices = x_vals.argsort()
+    x_vals = x_vals[sorted_indices]
+    rf_predictions = rf_predictions[sorted_indices]
+    nn_predictions = nn_predictions[sorted_indices]
+    knn_predictions = knn_predictions[sorted_indices]
+    
+    plt.figure(figsize=(20, 20))
+    plt.title("Comparing the predictions of 3 different regressors on the 'current_delay' feature from the training data", fontsize="xx-large")
+    plt.scatter(X["current_delay"], y, color="black", label="Training data", s=5)
+    plt.xlabel("Current delay (mins)", fontsize="xx-large")
+    plt.ylabel("Target delay (mins) (e.g. the next station's delay)", fontsize="xx-large")
+    plt.plot(x_vals, nn_predictions, color="green", label="Neural network predictions")
+    plt.plot(x_vals, knn_predictions, color="blue", label="KNN predictions")
+    plt.plot(x_vals, rf_predictions, color="red", label="RF predictions")
+    plt.legend(loc="center right", fontsize='xx-large', markerscale=5.0)
+    # plt.savefig("../plots/all_currentdelay_comparison.png", bbox_inches='tight')
+    plt.show()

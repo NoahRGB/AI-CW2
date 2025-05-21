@@ -17,6 +17,21 @@
     <div class="centered header">
       <h2>AI CW2 Chatbot</h2>
     </div>
+
+    <!-- recent queries-->
+    <div class = "recent-queries centered">
+      <h3>Recent Searches</h3>
+      {% if recent_queries %}
+      <ul>
+        {% for r in recent_queries %}
+              <button class="recent-search-btn" onclick = "load_query('{{r[1]}}','{{r[2]}}','{{r[3]}}','{{r[4]}}')">From {{r[1]}} To {{r[2]}} At {{r[3]}} On {{r[4]}}</button>
+        {% endfor %}
+      </ul>
+      {% else %}
+        <p> No recent searches found</p>
+      {% endif %}
+
+    </div>
   
     <!-- messages from chatbot / user go here -->
     <div class="chat-container" id="chatbox">

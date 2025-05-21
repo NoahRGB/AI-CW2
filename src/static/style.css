@@ -103,3 +103,15 @@ a.dark {
 .img {
   width: 20px;
 }
+
+.recent-search-btn {
+  background-color: white;
+  border-radius: 10px;
+  padding: 0.5%;
+}
+
+.recent-search-btn:hover {
+  color: white;
+  background-color: green;
+  cursor: pointer;
+}

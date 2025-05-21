@@ -251,9 +251,9 @@ class Chatbot:
                             if score >= 0.8:
                                 found_matches.append(Chatbot.IntentionTypes.from_string(time_type))
                 if len(found_matches) == 0:
-                    if self.departure_time_fact["pending"] == True:
+                    if "time" not in self.departure_time_fact:
                         return Chatbot.IntentionTypes.DECLARING_DEPARTURE_TIME
-                    elif self.return_time_fact["pending"] == True:
+                    elif "time" not in self.return_time_fact:
                         return Chatbot.IntentionTypes.DECLARING_RETURN_TIME
                 else:
                     return found_matches[len(found_matches) - 1]
@@ -285,9 +285,9 @@ class Chatbot:
                                 print(date_type, Chatbot.IntentionTypes.from_string(date_type))
                                 found_matches.append(Chatbot.IntentionTypes.from_string(date_type))
                 if len(found_matches) == 0:
-                    if self.departure_date_fact["pending"] == True:
+                    if "date" not in self.departure_date_fact:
                         return Chatbot.IntentionTypes.DECLARING_DEPARTURE_DATE
-                    elif self.return_date_fact["pending"] == True:
+                    elif "date" not in self.return_date_fact:
                         return Chatbot.IntentionTypes.DECLARING_RETURN_DATE
                 else:
                     return found_matches[len(found_matches) - 1]
