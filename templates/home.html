@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+  <script src="{{ url_for('static',  filename='script.js') }}" defer></script>
+  <title>Chatbot</title>
+</head>
+
+<body>
+  
+  <div class="flex-container">
+
+    <!-- header -->
+    <div class="centered header">
+      <h2>AI CW2 Chatbot</h2>
+    </div>
+
+    <!-- recent queries-->
+    <div class = "recent-queries centered">
+      <h3>Recent Searches</h3>
+      {% if recent_queries %}
+      <ul>
+        {% for r in recent_queries %}
+              <button onclick = "load_query('{{r[1]}}','{{r[2]}}','{{r[3]}}','{{r[4]}}')">From {{r[1]}} To {{r[2]}} At {{r[3]}} On {{r[4]}}</button>
+        {% endfor %}
+      </ul>
+      {% else %}
+        <p> No recent searches found</p>
+      {% endif %}
+
+    </div>
+  
+    <!-- messages from chatbot / user go here -->
+    <div class="chat-container" id="chatbox">
+
+      <div id="loader" class="chatbox-message-container">
+        <div class="chatbox-message chatbot-message">
+          <img src="/static/loader.gif" alt="thinking" class="img">
+        </div>
+      </div>
+
+    </div>
+  
+    <!-- input box / submit button -->
+    <div class="centered input-box-container">
+      <input type="text" class="wide-input-box" id="input-box">
+      <button class="button" id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+</body>
+
+</html>
