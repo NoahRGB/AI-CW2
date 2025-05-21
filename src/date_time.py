@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 # a class to hold date / time so that all python files can use the same type
 
@@ -139,3 +140,8 @@ class DateTime:
             found_dates.append((DateTime(day=day, month=month), original))
             
         return None if len(found_dates) == 0 else found_dates
+
+    @staticmethod
+    def today():
+        now = datetime.now()
+        return DateTime(day = now.day, month = now.month, year = now.year, hour = now.hour, minute = now.minute)

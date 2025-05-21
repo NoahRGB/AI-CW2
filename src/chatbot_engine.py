@@ -351,18 +351,17 @@ class ChatbotEngine(KnowledgeEngine):
             cheapest_ticket_info = rtt_cheapest_ticket_info
         elif rtt_cheapest_ticket_info == None and nr_cheapest_ticket_info != None:
             cheapest_ticket_info = nr_cheapest_ticket_info
-        
-        nr_cheapest_ticket, nr_url = nr_cheapest_ticket_info
-        rtt_cheapest_ticket, rtt_url = rtt_cheapest_ticket_info
-        
-        print(f"\nNational Rail cheapest ticket: {nr_cheapest_ticket['price']}")
-        print(f"\nRealtimetickets cheapest ticket: {nr_cheapest_ticket['price']}")
-        
-
-        if float(nr_cheapest_ticket["price"][1:]) < float(nr_cheapest_ticket["price"][1:]):
-            cheapest_ticket_info = (nr_cheapest_ticket, nr_url)
         else:
-            cheapest_ticket_info = (rtt_cheapest_ticket, rtt_url)
+            nr_cheapest_ticket, nr_url = nr_cheapest_ticket_info
+            rtt_cheapest_ticket, rtt_url = rtt_cheapest_ticket_info
+            
+            print(f"\nNational Rail cheapest ticket: {nr_cheapest_ticket['price']}")
+            print(f"\nRealtimetickets cheapest ticket: {nr_cheapest_ticket['price']}")
+            
+            if float(nr_cheapest_ticket["price"][1:]) < float(nr_cheapest_ticket["price"][1:]):
+                cheapest_ticket_info = (nr_cheapest_ticket, nr_url)
+            else:
+                cheapest_ticket_info = (rtt_cheapest_ticket, rtt_url)
         
         if cheapest_ticket_info:
             cheapest, url = cheapest_ticket_info

@@ -21,7 +21,7 @@ const addToChatbox = (message, isUser) => {
   chatbox.scrollTop = chatbox.scrollHeight;
 }
 
-const getChatbotMessage = userInput => {
+const getChatbotMessage = (userInput) => {
   $.post("/get_chatbot_message", { user_input: userInput, is_first_message: isFirstMessage }, chatbot_message => {
     turnOffLoader();
     console.log("Message: " + chatbot_message)
@@ -38,6 +38,7 @@ const sendMessage = () => {
     turnOnLoader();
     getChatbotMessage(userMessage);
     inputBox.value = ""
+    isFirstMessage = false;
   } else {
     alert("Please enter a message before sending");
   }
@@ -49,6 +50,22 @@ document.body.addEventListener("keypress", event => {
     sendMessage();
   }
 });
+
+function load_query(dep_loc, destination, time, date){
+  const query = `I am travelling from ${dep_loc} to ${destination} at ${time} on ${date}`;
+  addToChatbox(query, true);
+  turnOnLoader();
+  $.post("/get_chatbot_message", {
+    user_input: query,
+    is_first_message: true,
+    saved_query: true
+  }, chatbot_message=>{
+    turnOffLoader();
+    addToChatbox(chatbot_message, false);
+
+  });
+  isFirstMessage = false;
+}
 
 sendMessage();
 isFirstMessage = false;
