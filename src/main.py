@@ -125,7 +125,6 @@ def declare_all_information(user_input):
 @app.route("/")
 def home():
   return render_template("home.html", recent_queries=getRecents())
-  return render_template("home.html", recent_queries=getRecents())
 
 # route to send a new chatbot message to the website
 @app.post("/get_chatbot_message")
@@ -133,9 +132,7 @@ def get_chatbot_message():
   user_input = request.form.get("user_input")
   is_first_messsage = request.form.get("is_first_message") == "true"
   is_saved_query = request.form.get("saved_query") == "true"
-  is_saved_query = request.form.get("saved_query") == "true"
   
-  if is_first_messsage and len(chatbot_engine.facts) <=1: # if the website has just loaded, just send "hey" to the chatbot
   if is_first_messsage and len(chatbot_engine.facts) <=1: # if the website has just loaded, just send "hey" to the chatbot
     chatbot_engine.reset()
     chatbot.find_user_intention("Hey")
@@ -193,70 +190,7 @@ def get_chatbot_message():
     except Exception as e:
       print("error inserting into database: ", e)
       
-  
-  if chatbot.doing_task_1:
-    try:
-      dep_loc = chatbot.origin_station_fact
-      destination = chatbot.destination_station_fact
-      dep_time = chatbot.departure_time_fact
-      dep_date = chatbot.departure_date_fact
-      if (not dep_loc["pending"] and not destination["pending"] and not dep_time["pending"] and not dep_date["pending"] and 'name' in dep_loc and 'name' in destination and 'time' in dep_time and 'date' in dep_date):
-        dep_time_time = time(int(dep_time["time"].get_hour()), int(dep_time["time"].get_min()))
-        dep_date_date = date(int(dep_date["date"].get_year()), int(dep_date["date"].get_month()), int(dep_date["date"].get_day()))
-        if not existingQuery(dep_loc["name"], destination["name"], dep_time_time, dep_date_date):
-          insert_query(dep_loc["name"], destination["name"], dep_time_time, dep_date_date)
-        
-    except Exception as e:
-      print("error inserting into database: ", e)
-      
   return chatbot.last_chatbot_message
 
 if __name__ == "__main__": # if you run this file
   app.run(debug=True)
-  
-  
-  
-  
-  
-        #   "task1": {
-        #     "patterns": [
-        #         "ticket",
-        #         "cheapest",
-        #         "cost",
-        #         "Can you find the cheapest tickets?",
-        #         "Can you find me some train tickets?",
-        #         "I need train tickets",
-        #         "plan a train journey for me",
-        #         "plan a journey",
-        #         "journey planner",
-        #         "task 1",
-        #         "do task 1",
-        #         "link me to train tickets",
-        #         "i want to travel on a train",
-        #         "i want to get somewhere via train",
-        #         "plan my train journey",
-        #         "train journey"
-        #     ]
-        # },
-        # "task2": {
-        #     "patterns": [
-        #         "task 2",
-        #         "do task 2",
-        #         "predict delays",
-        #         "delays",
-        #         "predict delays on my journey",
-        #         "predict delays to london",
-        #         "predict delays to london liverpool street",
-        #         "predict delays to norwich",
-        #         "i want to predict delays to london",
-        #         "i want to predict delays to norwich",
-        #         "what will my delay be?",
-        #         "delay finder",
-        #         "delay calculator",
-        #         "can you predict delays?",
-        #         "can you calculate what my delay will be",
-        #         "can you find how long my train will be delayed?",
-        #         "how long will my train be delayed?",
-        #         "delay prediction"
-        #     ]
-        # },
