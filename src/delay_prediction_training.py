@@ -26,6 +26,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 
 from sklearn import neighbors
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn.neural_network import MLPRegressor
@@ -129,6 +130,7 @@ if __name__ == "__main__":
     #             })
     # training_data = pd.DataFrame(training_data)
     
+    
     # # remove outliers since the data is full of them and it heavily impacts results
     # training_data["current_delay"] = training_data["current_delay"].clip(lower=-30, upper=120)
     # training_data["target_delay"] = training_data["target_delay"].clip(lower=-30, upper=120)
@@ -159,6 +161,10 @@ if __name__ == "__main__":
     # X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2, random_state=SEED)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
+    # X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
+    # X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2, random_state=SEED)
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
 
     print("Prepared all data successfully")
 
@@ -167,6 +173,13 @@ if __name__ == "__main__":
 
     # /////////////// TRAINING MODELS & MAKING PREDICTIONS ///////////////////
 
+    model = models.Sequential([
+        layers.Dense(128, activation="relu", input_shape=(X.shape[1],)),
+        layers.Dense(64, activation="relu"),
+        layers.Dense(32, activation="relu"),
+        layers.Dense(16, activation="relu"),
+        layers.Dense(1, activation="linear")
+    ])
     model = models.Sequential([
         layers.Dense(128, activation="relu", input_shape=(X.shape[1],)),
         layers.Dense(64, activation="relu"),
@@ -188,7 +201,17 @@ if __name__ == "__main__":
     baseline_MAE = mean_absolute_error(y_test, baseline_predictions)
     baseline_MSE = mean_squared_error(y_test, baseline_predictions)
     baseline_r2 = r2_score(y_test, baseline_predictions)
+    baseline_predictions = [y_test.mean()] * len(y_test)
+    baseline_MAE = mean_absolute_error(y_test, baseline_predictions)
+    baseline_MSE = mean_squared_error(y_test, baseline_predictions)
+    baseline_r2 = r2_score(y_test, baseline_predictions)
 
+    knn = neighbors.KNeighborsRegressor(3, weights="uniform")
+    knn = knn.fit(X_train, y_train)
+    knn_predictions = knn.predict(X_test)
+    knn_MAE = mean_absolute_error(y_test, knn_predictions)
+    knn_MSE = mean_squared_error(y_test, knn_predictions)
+    knn_r2 = r2_score(y_test, knn_predictions)
     knn = neighbors.KNeighborsRegressor(3, weights="uniform")
     knn = knn.fit(X_train, y_train)
     knn_predictions = knn.predict(X_test)
@@ -197,6 +220,24 @@ if __name__ == "__main__":
     knn_r2 = r2_score(y_test, knn_predictions)
 
     rf = RandomForestRegressor(n_estimators=100, random_state=SEED)
+    rf.fit(X_train, y_train)
+    rf_predictions = rf.predict(X_test)
+    rf_MAE = mean_absolute_error(y_test, rf_predictions)
+    rf_MSE = mean_squared_error(y_test, rf_predictions)
+    rf_r2 = r2_score(y_test, rf_predictions)
+    
+    print(f"NN MAE: {nn_MAE}")
+    print(f"NN MSE: {nn_MSE}")
+    print(f"NN R^2: {nn_r2}")
+    print("~~~~~~~~~~~~~~~~~~~~")
+    print(f"Baseline MAE: {baseline_MAE}")
+    print(f"Baseline MSE: {baseline_MSE}")
+    print(f"Baseline R^2: {baseline_r2}")
+    print("~~~~~~~~~~~~~~~~~~~~")
+    print(f"KNN MAE: {knn_MAE}")
+    print(f"KNN MSE: {knn_MSE}")
+    print(f"KNN R^2: {knn_r2}")
+    print("~~~~~~~~~~~~~~~~~~~~")
     rf.fit(X_train, y_train)
     rf_predictions = rf.predict(X_test)
     rf_MAE = mean_absolute_error(y_test, rf_predictions)
@@ -254,7 +295,10 @@ if __name__ == "__main__":
     # plt.figure(figsize=(20, 20))
     # plt.scatter(X["current_delay"], y, color="black", label="training data", s=5)
     # plt.xlabel("Current")
+    # plt.scatter(X["current_delay"], y, color="black", label="training data", s=5)
+    # plt.xlabel("Current")
     # plt.ylabel("Target delay (mins) (e.g. the next station's delay)")
+    # plt.plot(y, rf_predictions, color="red", label="predicted")
     # plt.plot(y, rf_predictions, color="red", label="predicted")
     # plt.show()
     
