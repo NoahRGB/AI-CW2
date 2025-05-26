@@ -108,7 +108,7 @@ class Chatbot:
                 cleaned_text = cleaned_text + token.text + " "
         return cleaned_text.strip()
     
-    def find_user_intention(self, user_input, min_similarity=0.85):
+    def find_user_intention(self, user_input, min_similarity=0.80):
         # find what kind of message the user sent using Chatbot.IntentionTypes
         user_input = user_input.lower()
         cleaned_input = self.clean_text(user_input)
@@ -371,7 +371,17 @@ class Chatbot:
                 name, code, type = station
 
                 if not self.doing_task_1:
-                    detected["current_station"] = (name, code)
+                    # detected["current_station"] = (name, code)
+                    if type:
+                        if type == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
+                            detected["current_station"] = (name, code)
+                        elif type == Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION:
+                            detected["target_station"] = (name, code)
+                    else:
+                        if "name" not in self.current_station_fact:
+                            detected["current_station"] = (name, code)
+                        elif "name" not in self.target_station_fact:
+                            detected["target_station"] = (name, code)
                 else:
                     if type:
                         if type == Chatbot.IntentionTypes.DECLARING_ORIGIN_STATION:
@@ -418,7 +428,8 @@ class Chatbot:
             detected["children"] = detected_children
 
         # find delay in message
-        if self.last_intention_fact["type"] == Chatbot.IntentionTypes.DECLARING_DELAY:
+        # if self.last_intention_fact["type"] == Chatbot.IntentionTypes.DECLARING_DELAY:
+        if not self.doing_task_1:
             delay_minutes = self.detect_delay_minutes(message)
             if delay_minutes:
                 detected["current_delay"] = delay_minutes

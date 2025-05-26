@@ -23,7 +23,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 
-from delay_prediction_training import calculate_delay, encode_user_data, one_hot_encode
+from delay_prediction_training import calculate_delay, encode_user_data, one_hot_encode, detect_direction
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -33,18 +33,21 @@ with open("../delay_data/london_to_norwich.pickle", "rb") as file:
 
 def find_remaining_delays(data):
     delays = {}
-    encoded_data = encode_user_data(data)
-    while encoded_data:
-        ready_to_predict = one_hot_encode(pd.DataFrame([encoded_data]))
-        predicted_delay = rf_regressor.predict(ready_to_predict)[0]
-        delays[encoded_data["next_stop"]] = round(predicted_delay, 1)
-        encoded_data = encode_user_data({
-            "current_stop": encoded_data["next_stop"],
-            "time": data["time"],
-            "to_nrw": data["to_nrw"],
-            "current_delay": predicted_delay
-        })
-    return delays
+    if detect_direction(data["current_stop"], data["target_stop"]) == None:
+        return None
+    else:
+        encoded_data = encode_user_data(data)
+        while encoded_data:
+            ready_to_predict = one_hot_encode(pd.DataFrame([encoded_data]))
+            predicted_delay = rf_regressor.predict(ready_to_predict)[0]
+            delays[encoded_data["next_stop"]] = round(predicted_delay, 1)
+            encoded_data = encode_user_data({
+                "current_stop": encoded_data["next_stop"],
+                "time": data["time"],
+                "target_stop": data["target_stop"],
+                "current_delay": predicted_delay
+            })
+        return delays
 
 if __name__ == "__main__":
     data = {

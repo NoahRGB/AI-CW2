@@ -23,12 +23,29 @@ const addToChatbox = (message, isUser) => {
 }
 
 const getChatbotMessage = (userInput) => {
-  $.post("/get_chatbot_message", { user_input: userInput, is_first_message: isFirstMessage }, chatbot_message => {
-    turnOffLoader();
-    console.log("Message: " + chatbot_message)
-    isChatbotTurn = false;
-    addToChatbox(chatbot_message, false);
-  });
+
+  if (isFirstMessage) {
+    console.log("Resetting chatbot");
+
+    $.get("/reset_chatbot", { }, res => {
+
+      $.post("/get_chatbot_message", { user_input: userInput, is_first_message: isFirstMessage }, chatbot_message => {
+        turnOffLoader();
+        console.log("Message: " + chatbot_message)
+        isChatbotTurn = false;
+        addToChatbox(chatbot_message, false);
+        isFirstMessage = false;
+      });
+    });
+  } else {
+      $.post("/get_chatbot_message", { user_input: userInput, is_first_message: isFirstMessage }, chatbot_message => {
+        turnOffLoader();
+        console.log("Message: " + chatbot_message)
+        isChatbotTurn = false;
+        addToChatbox(chatbot_message, false);
+      });
+  }
+
 }
 
 const sendMessage = () => {
@@ -39,7 +56,6 @@ const sendMessage = () => {
     turnOnLoader();
     getChatbotMessage(userMessage);
     inputBox.value = ""
-    isFirstMessage = false;
   } else {
     alert("Please enter a message before sending");
   }
@@ -69,4 +85,3 @@ function load_query(dep_loc, destination, time, date){
 }
 
 sendMessage();
-isFirstMessage = false;

@@ -71,10 +71,10 @@ def national_rail_cheapest_ticket(origin_station, destination_station, ticket_ty
             url += (f"&type=single")
             
         browser.get("https://www.nationalrail.co.uk/")
-        sleep(0.5)
+        sleep(1)
         browser.get(url)
 
-       # clear cookies popup
+        # clear cookies popup
         cookies_button = browser.find_elements(By.ID, "onetrust-accept-btn-handler")
         while len(cookies_button) == 0:
             cookies_button = browser.find_elements(By.ID, "onetrust-accept-btn-handler")
@@ -110,11 +110,15 @@ if __name__ == "__main__":
     # test journey
     origin_station = "COL"
     destination_station = "NRW"
-    departure_date = DateTime(hour=15, minute=30, day=25, month=5, year=2025)
+    departure_date = DateTime(hour=16, minute=15, day=26, month=5, year=2025)
     return_date = DateTime(hour=20, minute=0, day=25, month=5, year=2025)
-    ticket_type = TicketTypes.RETURN
+    ticket_type = TicketTypes.SINGLE
     adult_tickets = 1
     child_tickets = 0
 
     ticket = national_rail_cheapest_ticket(origin_station, destination_station, ticket_type, departure_date, return_date, adult_tickets, child_tickets)
     print(f"\n\nTicket: {ticket}\n\n")
+
+
+# https://www.nationalrail.co.uk/journey-planner/?type=single&origin=NRW&destination=COL&leavingType=departing&leavingDate=260525&leavingHour=16&leavingMin=15&adults=1&extraTime=0#O
+# https://www.nationalrail.co.uk/journey-planner/?origin=COL&destination=NRW&leavingDate=260525&adults=1&children=0&leavingType=departing&extraTime=0&leavingHour=16&leavingMin=15&type=single

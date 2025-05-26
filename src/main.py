@@ -20,14 +20,30 @@ chatbot_engine = ChatbotEngine(chatbot)
 
 createDatabase()
 
-def get_station_code(name):
-  import pickle
-  with open("../chatbot_data/station_list.pickle", "rb") as file:
-    stations = pickle.load(file)
-    if stations.get(name.lower()):
-      return stations.get(name.lower()).upper()
-
-createDatabase()
+def reset_engine():
+  chatbot_engine.reset()
+  chatbot.find_user_intention("Hey")
+  
+  # initialise all the facts for the KnowledgeEngine
+  chatbot.last_intention_fact = chatbot_engine.modify(chatbot_engine.facts[1], type=chatbot.last_intention)
+  
+  # facts for part 1 (cheapest ticket)
+  chatbot.ticket_fact = chatbot_engine.declare(Ticket(pending=True))
+  chatbot.origin_station_fact = chatbot_engine.declare(OriginStation(pending=True))
+  chatbot.destination_station_fact = chatbot_engine.declare(DestinationStation(pending=True))
+  chatbot.departure_time_fact = chatbot_engine.declare(DepartureTime(pending=True))
+  chatbot.departure_date_fact = chatbot_engine.declare(DepartureDate(pending=True))
+  chatbot.adult_tickets_fact = chatbot_engine.declare(AdultTickets(count=1, pending=False))
+  chatbot.child_tickets_fact = chatbot_engine.declare(ChildTickets(count=0, pending=False))
+  chatbot.return_time_fact = chatbot_engine.declare(ReturnTime(pending=True))
+  chatbot.return_date_fact = chatbot_engine.declare(ReturnDate(pending=True))
+  
+  # facts for part 2 (delay prediction)
+  chatbot.current_station_fact = chatbot_engine.declare(CurrentStation(pending=True))
+  chatbot.current_time_fact = chatbot_engine.declare(CurrentTime(pending=True))
+  chatbot.current_delay_fact = chatbot_engine.declare(CurrentDelay(pending=True))
+  # chatbot.direction_fact = chatbot_engine.declare(Direction(pending=True))
+  chatbot.target_station_fact = chatbot_engine.declare(TargetStation(pending=True))
 
 def get_station_code(name):
   import pickle
@@ -108,18 +124,23 @@ def declare_all_information(user_input):
     station, code = information["current_station"]
     if chatbot.current_station_fact["pending"] == True:
       chatbot.current_station_fact = chatbot_engine.modify(chatbot.current_station_fact, name=station, code=code, pending=True)
+      chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
 
   if "current_time" in information:
     if chatbot.current_time_fact["pending"] == True:
       chatbot.current_time_fact = chatbot_engine.modify(chatbot.current_time_fact, time=information["current_time"], pending=True)
+      chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
 
   if "current_delay" in information:
     if chatbot.current_delay_fact["pending"] == True:
       chatbot.current_delay_fact = chatbot_engine.modify(chatbot.current_delay_fact, amount=information["current_delay"], pending=True)
+      chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
 
-  if "direction" in information:
-    if chatbot.direction_fact["pending"] == True:
-      chatbot.direction_fact = chatbot_engine.modify(chatbot.direction_fact, to_nrw=information["direction"], pending=True)
+  if "target_station" in information:
+    station, code = information["target_station"]
+    if chatbot.target_station_fact["pending"] == True:
+      chatbot.target_station_fact = chatbot_engine.modify(chatbot.target_station_fact, name=station, code=code, pending=True)
+      chatbot.last_intention_fact = chatbot_engine.modify(chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
 
 # route to render the homepage
 @app.route("/")
@@ -133,29 +154,10 @@ def get_chatbot_message():
   is_first_messsage = request.form.get("is_first_message") == "true"
   is_saved_query = request.form.get("saved_query") == "true"
   
-  if is_first_messsage and len(chatbot_engine.facts) <=1: # if the website has just loaded, just send "hey" to the chatbot
-    chatbot_engine.reset()
-    chatbot.find_user_intention("Hey")
-    
-    # initialise all the facts for the KnowledgeEngine
-    chatbot.last_intention_fact = chatbot_engine.modify(chatbot_engine.facts[1], type=chatbot.last_intention)
-    
-    # facts for part 1 (cheapest ticket)
-    chatbot.ticket_fact = chatbot_engine.declare(Ticket(pending=True))
-    chatbot.origin_station_fact = chatbot_engine.declare(OriginStation(pending=True))
-    chatbot.destination_station_fact = chatbot_engine.declare(DestinationStation(pending=True))
-    chatbot.departure_time_fact = chatbot_engine.declare(DepartureTime(pending=True))
-    chatbot.departure_date_fact = chatbot_engine.declare(DepartureDate(pending=True))
-    chatbot.adult_tickets_fact = chatbot_engine.declare(AdultTickets(count=1, pending=False))
-    chatbot.child_tickets_fact = chatbot_engine.declare(ChildTickets(count=0, pending=False))
-    chatbot.return_time_fact = chatbot_engine.declare(ReturnTime(pending=True))
-    chatbot.return_date_fact = chatbot_engine.declare(ReturnDate(pending=True))
-    
-    # facts for part 2 (delay prediction)
-    chatbot.current_station_fact = chatbot_engine.declare(CurrentStation(pending=True))
-    chatbot.current_time_fact = chatbot_engine.declare(CurrentTime(pending=True))
-    chatbot.current_delay_fact = chatbot_engine.declare(CurrentDelay(pending=True))
-    chatbot.direction_fact = chatbot_engine.declare(Direction(pending=True))
+  print(is_first_messsage)
+  
+  if is_first_messsage: # if the website has just loaded, just send "hey" to the chatbot
+    reset_engine()
 
   else: # otherwise, use the user's message
     # find all the information that was in the user's message
@@ -191,6 +193,12 @@ def get_chatbot_message():
       print("error inserting into database: ", e)
       
   return chatbot.last_chatbot_message
+
+@app.get("/reset_chatbot")
+def reset_chatbot():
+  print("Resetting chatbot")
+  reset_engine()
+  return "Done"
 
 if __name__ == "__main__": # if you run this file
   app.run(debug=True)

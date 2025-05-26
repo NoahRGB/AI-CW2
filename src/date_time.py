@@ -7,6 +7,7 @@ class DateTime:
     # can be used just to store a time, just to store a date, or both. day/month/year will always
     # be integers and str() will format the date in the form "ddmmyy"
     months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+    month_day_counts = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
     def __init__(self, hour=10, minute=30, day=1, month=1, year=2025):
         self.__hour = int(hour)
@@ -55,15 +56,35 @@ class DateTime:
     def get_date(self):
         return f"{self.get_day()}/{self.get_month()}/{self.get_year()}"
     
+    def increment_day(self):
+        is_leap_year = (int(self.year) % 400 == 0) or (int(self.year) % 4 == 0 and int(self.year) % 100 != 0)
+        
+        month_index = int(self.month) - 1
+        days_in_month = DateTime.month_day_counts[month_index]
+        
+        if is_leap_year and int(self.month) == 2:
+            days_in_month = 29
+
+        if int(self.day) < days_in_month:
+            self.day += 1
+        else:
+            self.day = 1
+            if int(self.month) == 12:
+                self.month = 1
+                self.year += 1
+            else:
+                self.month += 1
+    
     def round_to_nearest_hour(self):
         if self.__minute >= 30:
             # round up
-            self.hour += 1
+            self.__hour += 1
             self.__minute = 0
         else:
             # round down
-            self.hour -= 1
             self.__minute = 0
+        if self.__hour > 23: 
+            self.__hour = 23
             
     
     def __lt__(self, other):

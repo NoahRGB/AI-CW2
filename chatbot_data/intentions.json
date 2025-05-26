@@ -17,6 +17,49 @@
                 "Goodbye! &#128075;", "Bye bye &#128075;", "Thanks, bye! &#128075;"
             ]
         },
+        "task1": {
+            "patterns": [
+                "ticket",
+                "cheapest",
+                "cost",
+                "Can you find the cheapest tickets?",
+                "Can you find me some train tickets?",
+                "I need train tickets",
+                "plan a train journey for me",
+                "plan a journey",
+                "journey planner",
+                "task 1",
+                "do task 1",
+                "link me to train tickets",
+                "i want to travel on a train",
+                "i want to get somewhere via train",
+                "plan my train journey",
+                "train journey",
+                "train tickets"
+            ]
+        },
+        "task2": {
+            "patterns": [
+                "task 2",
+                "do task 2",
+                "predict delays",
+                "delays",
+                "predict delays on my journey",
+                "predict delays to london",
+                "predict delays to london liverpool street",
+                "predict delays to norwich",
+                "i want to predict delays to london",
+                "i want to predict delays to norwich",
+                "what will my delay be?",
+                "delay finder",
+                "delay calculator",
+                "can you predict delays?",
+                "can you calculate what my delay will be",
+                "can you find how long my train will be delayed?",
+                "how long will my train be delayed?",
+                "delay prediction"
+            ]
+        },
         "cancel": {
             "patterns": [
                 "go back", "exit", "cancel", "undo"

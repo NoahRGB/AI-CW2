@@ -33,5 +33,7 @@ class CurrentTime(Fact):
     pass
 class CurrentDelay(Fact):
     pass
-class Direction(Fact):
+# class Direction(Fact):
+#     pass
+class TargetStation(Fact):
     pass

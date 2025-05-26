@@ -36,7 +36,7 @@ class ChatbotEngine(KnowledgeEngine):
             elif self.chatbot.destination_station_fact["pending"] == True:
                 return Chatbot.IntentionTypes.DECLARING_DESTINATION_STATION
             
-    def reset_facts(self):
+    def reset_cheapest_ticket_facts(self):
         self.retract(self.chatbot.ticket_fact)
         self.chatbot.ticket_fact = self.declare(Ticket(pending=True))
         self.retract(self.chatbot.origin_station_fact)
@@ -55,6 +55,16 @@ class ChatbotEngine(KnowledgeEngine):
         self.chatbot.adult_tickets_fact = self.declare(AdultTickets(count=1, pending=True))
         self.retract(self.chatbot.child_tickets_fact)
         self.chatbot.child_tickets_fact = self.declare(ChildTickets(count=0, pending=True))
+        
+    def reset_delay_prediction_facts(self):
+        self.retract(self.chatbot.current_station_fact)
+        self.chatbot.current_station_fact = self.declare(CurrentStation(pending=True))
+        self.retract(self.chatbot.current_time_fact)
+        self.chatbot.current_time_fact = self.declare(CurrentTime(pending=True))
+        self.retract(self.chatbot.current_delay_fact)
+        self.chatbot.current_delay_fact = self.declare(CurrentDelay(pending=True))
+        self.retract(self.chatbot.target_station_fact)
+        self.target_station_fact = self.declare(TargetStation(pending=True))
                     
     @DefFacts()
     def setup(self):
@@ -75,19 +85,7 @@ class ChatbotEngine(KnowledgeEngine):
     def exit(self):
         self.chatbot.send_bot_message(choice(self.chatbot.intentions["intentions"]["exit"]["responses"]))
         
-    @Rule(AND(OR(Intention(type=Chatbot.IntentionTypes.NONE), Intention(type=Chatbot.IntentionTypes.UNSURE)),
-              AND(~Ticket(type=MATCH.ticket_type, pending=True) & ~OriginStation(name=MATCH.origin_name, code=MATCH.origin_code, pending=True)
-                  & ~DestinationStation(name=W(), code=W(), pending=True)
-                  & ~DepartureTime(time=W(), pending=True)
-                  & ~DepartureDate(date=W(), pending=True)
-                  & ~ReturnTime(time=W(), pending=True)
-                  & ~ReturnDate(date=W(), pending=True)
-                  & ~AdultTickets(count=W(), pending=True)
-                  & ~ChildTickets(count=W(), pending=True)
-                  & ~CurrentStation(name=W(), code=W(), pending=True)
-                  & ~CurrentTime(time=W(), pending=True)
-                  & ~CurrentDelay(amount=W(), pending=True)
-                  & ~Direction(to_nrw=W(), pending=True))))
+    @Rule(OR(Intention(type=Chatbot.IntentionTypes.NONE), Intention(type=Chatbot.IntentionTypes.UNSURE)))
     def unsure(self):
         self.chatbot.send_bot_message("I'm unsure what you mean, but you can ask me about train tickets!")
 
@@ -182,7 +180,7 @@ class ChatbotEngine(KnowledgeEngine):
               & AdultTickets(count=MATCH.adult_tickets)
               & ChildTickets(count=MATCH.child_tickets))
     def deny_cheapest_ticket_confirmation(self):
-        self.reset_facts()
+        self.reset_cheapest_ticket_facts()
         self.chatbot.send_bot_message("Ticket denied. Please try again")
     
     @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM)) 
@@ -269,139 +267,95 @@ class ChatbotEngine(KnowledgeEngine):
         else:
             self.chatbot.send_bot_message(f"There was an issue with your specified journey")
             
-        self.reset_facts()
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+        self.reset_cheapest_ticket_facts()
+                
     # ====== INPUTTING CURRENT STATION ======
-
-    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True))
-    def confirm_pending_current_station(self, current_station_name, current_station_code):
-        self.chatbot.current_station_fact = self.modify(self.chatbot.current_station_fact, pending=False)
-        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
-        
-    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM))
-              & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True))
-    def prompt_current_station_confirmation(self, current_station_name, current_station_code):
-        self.chatbot.send_bot_message(f"Confirm current station {current_station_name} ({current_station_code})?")
-
-    @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) & ~CurrentStation(pending=False))
+    
+    @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) & ~CurrentStation(name=W(), code=W(), pending=True))
     def select_current_station(self):
         self.chatbot.send_bot_message(f"I can help to predict delays along the Norwich -> London Liverpool Street line<br>What station are you currently at?")
 
     # ====== INPUTTING CURRENT TIME ======
-
-    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) 
-          & CurrentTime(time=MATCH.current_time, pending=True)
-          & ~CurrentStation(name=W(), code=W(), pending=True))
-    def confirm_pending_current_time(self, current_time):
-        self.chatbot.current_time_fact = self.modify(self.chatbot.current_time_fact, pending=False)
-        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
-        
-    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM))
-              & CurrentTime(time=MATCH.current_time, pending=True))
-    def prompt_current_time_confirmation(self, current_time):
-        self.chatbot.send_bot_message(f"Confirm current time {current_time.get_time()}?")
-
+    
     @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) 
-          & CurrentStation(name=W(), code=W(), pending=False) & ~CurrentTime(pending=False))
+          & CurrentStation(name=W(), code=W(), pending=True) 
+          & ~CurrentTime(time=W(), pending=True))
     def select_current_time(self):
         self.chatbot.send_bot_message(f"What is the current time?")
 
     # ====== INPUTTING CURRENT DELAY ======
 
-    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM) 
-          & CurrentDelay(amount=MATCH.current_delay, pending=True)
-          & ~CurrentStation(name=W(), code=W(), pending=True)
-          & ~CurrentTime(time=W(), pending=True))
-    def confirm_pending_current_delay(self, current_delay):
-        self.chatbot.current_delay_fact = self.modify(self.chatbot.current_delay_fact, pending=False)
-        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH)
-        
-    @Rule(NOT(Intention(type=Chatbot.IntentionTypes.CONFIRM))
-              & CurrentDelay(amount=MATCH.current_delay, pending=True))
-    def prompt_current_delay_confirmation(self, current_delay):
-        self.chatbot.send_bot_message(f"Confirm current delay of {current_delay} minutes?")
-
     @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) 
-          & CurrentStation(name=W(), code=W(), pending=False)
-          & CurrentTime(time=W(), pending=False) 
-          & ~CurrentDelay(pending=False))
+          & CurrentStation(name=W(), code=W(), pending=True)
+          & CurrentTime(time=W(), pending=True) 
+          & ~CurrentDelay(amount=W(), pending=True))
     def select_current_delay(self):
         self.chatbot.send_bot_message(f"What is your current delay (minutes)?")
         self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DECLARING_DELAY)
         
+    # ====== INPUTTING TARGET STATION ======
+
+    @Rule(Intention(type=Chatbot.IntentionTypes.DELAY_WALKTHROUGH) 
+          & CurrentStation(name=W(), code=W(), pending=True)
+          & CurrentTime(time=W(), pending=True) 
+          & CurrentDelay(amount=W(), pending=True)
+          & ~TargetStation(name=W(), code=W(), pending=True))
+    def select_target_station(self):
+        self.chatbot.send_bot_message(f"What is your destination station?")
+        self.chatbot.last_intention_fact = self.modify(self.chatbot.last_intention_fact, type=Chatbot.IntentionTypes.DECLARING_DELAY)
+        
     # ====== PREDICT DELAY ======
+    
+    @Rule(Intention(type=Chatbot.IntentionTypes.DENY)
+          & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True)
+          & CurrentTime(time=MATCH.current_time, pending=True)
+          & CurrentDelay(amount=MATCH.current_delay, pending=True)
+          & TargetStation(name=MATCH.target_station_name, code=MATCH.target_station_code, pending=True))
+    def deny_delay_information(self):
+        self.reset_delay_prediction_facts()
+        self.chatbot.send_bot_message("Current journey details denied. Please try again")
+    
+    @Rule(Intention(type=Chatbot.IntentionTypes.CONFIRM)
+          & CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True)
+          & CurrentTime(time=MATCH.current_time, pending=True)
+          & CurrentDelay(amount=MATCH.current_delay, pending=True)
+          & TargetStation(name=MATCH.target_station_name, code=MATCH.target_station_code, pending=True))
+    def confirm_delay_informaiton(self):
+        self.chatbot.current_station_fact = self.modify(self.chatbot.current_station_fact, pending=False)
+        self.chatbot.current_time_fact = self.modify(self.chatbot.current_time_fact, pending=False)
+        self.chatbot.current_delay_fact = self.modify(self.chatbot.current_delay_fact, pending=False)
+        self.chatbot.target_station_fact = self.modify(self.chatbot.target_station_fact, pending=False)
+    
+    @Rule(CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=True)
+          & CurrentTime(time=MATCH.current_time, pending=True)
+          & CurrentDelay(amount=MATCH.current_delay, pending=True)
+          & TargetStation(name=MATCH.target_station_name, code=MATCH.target_station_code, pending=True))
+    def prompt_delay_confirmation(self, current_station_name, current_station_code, current_time, current_delay, target_station_name, target_station_code):
+        self.chatbot.send_bot_message(f"Confirm your journey details:<br>Current station: {current_station_name} ({current_station_code})"
+                                      + f"<br>Target station: {target_station_name} ({target_station_code})"
+                                      + f"<br>Current time: {current_time.get_time()}<br>Current delay: {current_delay}")
     
     @Rule(CurrentStation(name=MATCH.current_station_name, code=MATCH.current_station_code, pending=False)
           & CurrentTime(time=MATCH.current_time, pending=False)
-          & CurrentDelay(amount=MATCH.current_delay, pending=False))
-    def predict_delay(self, current_station_name, current_station_code, current_time, current_delay):
+          & CurrentDelay(amount=MATCH.current_delay, pending=False)
+          & TargetStation(name=MATCH.target_station_name, code=MATCH.target_station_code, pending=False))
+    def predict_delay(self, current_station_name, current_station_code, current_time, current_delay, target_station_name, target_station_code):
         print("Predicting delay")
 
         data = {
             "current_stop": current_station_code,
             "time": current_time,
-            "to_nrw": True,
+            "target_stop": target_station_code,
             "current_delay": current_delay
         }
 
         delays = find_remaining_delays(data)
-        delay_message = f"Further delays from {data['current_stop']} {'towards Norwich' if data['to_nrw'] else 'towards London Liverpool Street'} at {data['time'].get_time()} with {data['current_delay']} minute(s) of delay:<br>"
-        for delay in delays:
-            mintutes_message = (str(delays[delay]) + " minutes late") if delays[delay] > 0 else (str(delays[delay])[1:] + " minutes early")
-            delay_message += f"Delay at {delay}: {mintutes_message}<br>"
-        self.chatbot.send_bot_message(delay_message)
+        if delays != None:
+            delay_message = f"Delays from {data['current_stop']} to {data['target_stop']}:<br>"
+            for delay in delays:
+                mintutes_message = (str(delays[delay]) + " minutes late") if delays[delay] > 0 else (str(delays[delay])[1:] + " minutes early")
+                delay_message += f"Delay at {delay}: {mintutes_message}<br>"
+            self.chatbot.send_bot_message(delay_message)
+        else:
+            self.chatbot.send_bot_message(f"There was a problem with your journey<br>Make sure your stations are on the Norwich -> London Liverpool Street line")
+            self.reset_delay_prediction_facts()
